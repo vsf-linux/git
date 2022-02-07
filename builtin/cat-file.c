@@ -28,7 +28,20 @@ struct batch_options {
 	const char *format;
 };
 
+#ifdef __VSF__
+struct __git_builtin_cat_file_ctx_t {
+	const char *__force_path;
+};
+define_vsf_git_mod(git_builtin_cat_file,
+	sizeof(struct __git_builtin_cat_file_ctx_t),
+	GIT_MOD_BUILTIN_CAT_FILE,
+	NULL
+)
+#	define git_builtin_cat_file_ctx	((struct __git_builtin_cat_file_ctx_t *)vsf_git_ctx(git_builtin_cat_file))
+#	define force_path				(git_builtin_cat_file_ctx->__force_path)
+#else
 static const char *force_path;
+#endif
 
 static int filter_object(const char *path, unsigned mode,
 			 const struct object_id *oid,

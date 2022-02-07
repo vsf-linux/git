@@ -38,7 +38,7 @@
 #ifdef __VSF__
 struct __git_builtin_am_ctx_t {
 	struct {
-		struct strbuf __sb;				// = STRBUF_INIT;
+		struct strbuf __sb;			// = STRBUF_INIT;
 	} msgnum;
 };
 static void __git_builtin_am_mod_init(void *ctx)

@@ -37,11 +37,11 @@ static const char * const builtin_branch_usage[] = {
 };
 
 #ifdef __VSF__
-#	define git_branch_ctx			((struct __git_branch_ctx_t *)vsf_git_ctx(git_branch))
-#	define head						(git_branch_ctx->__head)
-#	define head_oid					(git_branch_ctx->__head_oid)
-#	define branch_use_color			(git_branch_ctx->__branch_use_color)
-#	define branch_colors			(git_branch_ctx->__branch_colors)
+#	define git_builtin_branch_ctx	((struct __git_builtin_branch_ctx_t *)vsf_git_ctx(git_builtin_branch))
+#	define head						(git_builtin_branch_ctx->__head)
+#	define head_oid					(git_builtin_branch_ctx->__head_oid)
+#	define branch_use_color			(git_builtin_branch_ctx->__branch_use_color)
+#	define branch_colors			(git_builtin_branch_ctx->__branch_colors)
 
 const char __branch_colors[][COLOR_MAXLEN] = {
 #else
@@ -80,9 +80,8 @@ static const char *color_branch_slots[] = {
 };
 
 #ifdef __VSF__
-#	define git_branch_ctx			((struct __git_branch_ctx_t *)vsf_git_ctx(git_branch))
-#	define __output					(git_branch_ctx->____output)
-#	define colopts					(git_branch_ctx->__colopts)
+#	define __output					(git_builtin_branch_ctx->____output)
+#	define colopts					(git_builtin_branch_ctx->__colopts)
 #else
 static struct string_list __output = STRING_LIST_INIT_DUP;
 static unsigned int colopts;
@@ -91,7 +90,7 @@ static unsigned int colopts;
 define_list_config_array(color_branch_slots);
 
 #ifdef __VSF__
-struct __git_branch_ctx_t {
+struct __git_builtin_branch_ctx_t {
 	const char *__head;
 	struct object_id __head_oid;
 	int __branch_use_color;					// = -1;
@@ -106,19 +105,19 @@ struct __git_branch_ctx_t {
 		struct ref_sorting *__sorting;
 	} cmd_branch;
 };
-static void __git_branch_mod_init(void *ctx)
+static void __git_builtin_branch_mod_init(void *ctx)
 {
-	struct __git_branch_ctx_t *__git_branch_ctx = ctx;
-	VSF_LINUX_ASSERT(dimof(__branch_colors) <= dimof(__git_branch_ctx->__branch_colors));
-	memcpy(__git_branch_ctx->__branch_colors, __branch_colors, sizeof(__branch_colors));
-	__git_branch_ctx->__branch_use_color = -1;
-	__git_branch_ctx->____output = STRING_LIST_INIT_DUP;
-	__git_branch_ctx->quote_literal_for_format.__buf = STRBUF_INIT;
+	struct __git_builtin_branch_ctx_t *__git_builtin_branch_ctx = ctx;
+	VSF_LINUX_ASSERT(dimof(__branch_colors) <= dimof(__git_builtin_branch_ctx->__branch_colors));
+	memcpy(__git_builtin_branch_ctx->__branch_colors, __branch_colors, sizeof(__branch_colors));
+	__git_builtin_branch_ctx->__branch_use_color = -1;
+	__git_builtin_branch_ctx->____output = STRING_LIST_INIT_DUP;
+	__git_builtin_branch_ctx->quote_literal_for_format.__buf = STRBUF_INIT;
 }
-define_vsf_git_mod(git_branch,
-	sizeof(struct __git_branch_ctx_t),
-	GIT_MOD_BRANCH,
-	__git_branch_mod_init
+define_vsf_git_mod(git_builtin_branch,
+	sizeof(struct __git_builtin_branch_ctx_t),
+	GIT_MOD_BUILTIN_BRANCH,
+	__git_builtin_branch_mod_init
 )
 #endif
 
@@ -384,7 +383,7 @@ static int calc_maxwidth(struct ref_array *refs, int remote_bonus)
 static const char *quote_literal_for_format(const char *s)
 {
 #ifdef __VSF__
-#	define __buf				(git_branch_ctx->quote_literal_for_format.__buf)
+#	define __buf				(git_builtin_branch_ctx->quote_literal_for_format.__buf)
 #else
 	static struct strbuf __buf = STRBUF_INIT;
 #endif
@@ -644,7 +643,7 @@ static void copy_or_rename_branch(const char *oldname, const char *newname, int 
 }
 
 #ifdef __VSF__
-#	define edit_description_ret	(git_branch_ctx->__edit_description_ret)
+#	define edit_description_ret	(git_builtin_branch_ctx->__edit_description_ret)
 #endif
 static GIT_PATH_FUNC(edit_description, "EDIT_DESCRIPTION")
 
@@ -688,7 +687,7 @@ int cmd_branch(int argc, const char **argv, const char *prefix)
 	struct ref_filter filter;
 	int icase = 0;
 #ifdef __VSF__
-#	define sorting				(git_branch_ctx->cmd_branch.__sorting)
+#	define sorting				(git_builtin_branch_ctx->cmd_branch.__sorting)
 #else
 	static struct ref_sorting *sorting;
 #endif

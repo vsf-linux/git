@@ -46,6 +46,90 @@ static const char * const builtin_clone_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_builtin_clone_ctx_t {
+	int __option_no_checkout, __option_bare, __option_mirror;
+	int __option_single_branch;			// = -1;
+	int __option_local;					// = -1;
+	int __option_no_hardlinks, __option_shared;
+	int __option_no_tags;
+	int __option_shallow_submodules;
+	int __option_reject_shallow;		// = -1;
+	int __config_reject_shallow;		// = -1;
+	int __deepen;
+	char *__option_template, *__option_depth, *__option_since;
+	char *__option_origin;
+	char *__remote_name;
+	char *__option_branch;
+	struct string_list __option_not;	// = STRING_LIST_INIT_NODUP;
+	const char *__real_git_dir;
+	char *__option_upload_pack;			// = "git-upload-pack";
+	int __option_verbosity;
+	int __option_progress;				// = -1;
+	int __option_sparse_checkout;
+	enum transport_family ____family;
+	struct string_list __option_config;	// = STRING_LIST_INIT_NODUP;
+	struct string_list __option_required_reference;	// = STRING_LIST_INIT_NODUP;
+	struct string_list __option_optional_reference;	// = STRING_LIST_INIT_NODUP;
+	int __option_dissociate;
+	int __max_jobs;						// = -1;
+	struct string_list __option_recurse_submodules;	// = STRING_LIST_INIT_NODUP;
+	struct list_objects_filter_options __filter_options;
+	struct string_list ____server_options;			// = STRING_LIST_INIT_NODUP;
+	int __option_remote_submodules;
+	struct option __builtin_clone_options[35];
+	const char *__junk_work_tree;
+	int __junk_work_tree_flags;
+	const char *__junk_git_dir;
+	int __junk_git_dir_flags;
+	enum {
+		JUNK_LEAVE_NONE,
+		JUNK_LEAVE_REPO,
+		JUNK_LEAVE_ALL
+	} __junk_mode;						// = JUNK_LEAVE_NONE;
+};
+static void __git_builtin_clone_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_clone,
+	sizeof(struct __git_builtin_clone_ctx_t),
+	GIT_MOD_BUILTIN_CLONE,
+	__git_builtin_clone_mod_init
+)
+#	define git_builtin_clone_ctx		((struct __git_builtin_clone_ctx_t *)vsf_git_ctx(git_builtin_clone))
+#	define option_no_checkout			(git_builtin_clone_ctx->__option_no_checkout)
+#	define option_bare					(git_builtin_clone_ctx->__option_bare)
+#	define option_mirror				(git_builtin_clone_ctx->__option_mirror)
+#	define option_single_branch			(git_builtin_clone_ctx->__option_single_branch)
+#	define option_local					(git_builtin_clone_ctx->__option_local)
+#	define option_no_hardlinks			(git_builtin_clone_ctx->__option_no_hardlinks)
+#	define option_shared				(git_builtin_clone_ctx->__option_shared)
+#	define option_no_tags				(git_builtin_clone_ctx->__option_no_tags)
+#	define option_shallow_submodules	(git_builtin_clone_ctx->__option_shallow_submodules)
+#	define option_reject_shallow		(git_builtin_clone_ctx->__option_reject_shallow)
+#	define config_reject_shallow		(git_builtin_clone_ctx->__config_reject_shallow)
+#	define deepen						(git_builtin_clone_ctx->__deepen)
+#	define option_template				(git_builtin_clone_ctx->__option_template)
+#	define option_depth					(git_builtin_clone_ctx->__option_depth)
+#	define option_since					(git_builtin_clone_ctx->__option_since)
+#	define option_origin				(git_builtin_clone_ctx->__option_origin)
+#	define remote_name					(git_builtin_clone_ctx->__remote_name)
+#	define option_branch				(git_builtin_clone_ctx->__option_branch)
+#	define option_not					(git_builtin_clone_ctx->__option_not)
+#	define real_git_dir					(git_builtin_clone_ctx->__real_git_dir)
+#	define option_upload_pack			(git_builtin_clone_ctx->__option_upload_pack)
+#	define option_verbosity				(git_builtin_clone_ctx->__option_verbosity)
+#	define option_progress				(git_builtin_clone_ctx->__option_progress)
+#	define option_sparse_checkout		(git_builtin_clone_ctx->__option_sparse_checkout)
+#	define __family						(git_builtin_clone_ctx->____family)
+#	define option_config				(git_builtin_clone_ctx->__option_config)
+#	define option_required_reference	(git_builtin_clone_ctx->__option_required_reference)
+#	define option_optional_reference	(git_builtin_clone_ctx->__option_optional_reference)
+#	define option_dissociate			(git_builtin_clone_ctx->__option_dissociate)
+#	define max_jobs						(git_builtin_clone_ctx->__max_jobs)
+#	define option_recurse_submodules	(git_builtin_clone_ctx->__option_recurse_submodules)
+#	define filter_options				(git_builtin_clone_ctx->__filter_options)
+#	define __server_options				(git_builtin_clone_ctx->____server_options)
+#	define option_remote_submodules		(git_builtin_clone_ctx->__option_remote_submodules)
+#else
 static int option_no_checkout, option_bare, option_mirror, option_single_branch = -1;
 static int option_local = -1, option_no_hardlinks, option_shared;
 static int option_no_tags;
@@ -63,7 +147,7 @@ static char *option_upload_pack = "git-upload-pack";
 static int option_verbosity;
 static int option_progress = -1;
 static int option_sparse_checkout;
-static enum transport_family family;
+static enum transport_family __family;
 static struct string_list option_config = STRING_LIST_INIT_NODUP;
 static struct string_list option_required_reference = STRING_LIST_INIT_NODUP;
 static struct string_list option_optional_reference = STRING_LIST_INIT_NODUP;
@@ -71,8 +155,9 @@ static int option_dissociate;
 static int max_jobs = -1;
 static struct string_list option_recurse_submodules = STRING_LIST_INIT_NODUP;
 static struct list_objects_filter_options filter_options;
-static struct string_list server_options = STRING_LIST_INIT_NODUP;
+static struct string_list __server_options = STRING_LIST_INIT_NODUP;
 static int option_remote_submodules;
+#endif
 
 static int recurse_submodules_cb(const struct option *opt,
 				 const char *arg, int unset)
@@ -88,7 +173,29 @@ static int recurse_submodules_cb(const struct option *opt,
 	return 0;
 }
 
+#ifdef __VSF__
+#	define builtin_clone_options		(git_builtin_clone_ctx->__builtin_clone_options)
+static void __git_builtin_clone_mod_init(void *ctx)
+{
+	struct __git_builtin_clone_ctx_t *__git_builtin_clone_ctx = ctx;
+	__git_builtin_clone_ctx->__option_single_branch = -1;
+	__git_builtin_clone_ctx->__option_local = -1;
+	__git_builtin_clone_ctx->__option_reject_shallow = -1;
+	__git_builtin_clone_ctx->__config_reject_shallow = -1;
+	__git_builtin_clone_ctx->__option_not = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->__option_upload_pack = "git-upload-pack";
+	__git_builtin_clone_ctx->__option_progress = -1;
+	__git_builtin_clone_ctx->__option_config = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->__option_required_reference = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->__option_optional_reference = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->__max_jobs = -1;
+	__git_builtin_clone_ctx->__option_recurse_submodules = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->____server_options = STRING_LIST_INIT_NODUP;
+	__git_builtin_clone_ctx->__junk_mode = JUNK_LEAVE_NONE;
+struct option __builtin_clone_options[] = {
+#else
 static struct option builtin_clone_options[] = {
+#endif
 	OPT__VERBOSITY(&option_verbosity),
 	OPT_BOOL(0, "progress", &option_progress,
 		 N_("force progress reporting")),
@@ -143,11 +250,11 @@ static struct option builtin_clone_options[] = {
 		   N_("separate git dir from working tree")),
 	OPT_STRING_LIST('c', "config", &option_config, N_("key=value"),
 			N_("set config inside the new repository")),
-	OPT_STRING_LIST(0, "server-option", &server_options,
+	OPT_STRING_LIST(0, "server-option", &__server_options,
 			N_("server-specific"), N_("option to transmit")),
-	OPT_SET_INT('4', "ipv4", &family, N_("use IPv4 addresses only"),
+	OPT_SET_INT('4', "ipv4", &__family, N_("use IPv4 addresses only"),
 			TRANSPORT_FAMILY_IPV4),
-	OPT_SET_INT('6', "ipv6", &family, N_("use IPv6 addresses only"),
+	OPT_SET_INT('6', "ipv6", &__family, N_("use IPv6 addresses only"),
 			TRANSPORT_FAMILY_IPV6),
 	OPT_PARSE_LIST_OBJECTS_FILTER(&filter_options),
 	OPT_BOOL(0, "remote-submodules", &option_remote_submodules,
@@ -156,11 +263,16 @@ static struct option builtin_clone_options[] = {
 		    N_("initialize sparse-checkout file to include only files at root")),
 	OPT_END()
 };
+#ifdef __VSF__
+	VSF_LINUX_ASSERT(dimof(__builtin_clone_options) <= dimof(__git_builtin_clone_ctx->__builtin_clone_options));
+	memcpy(__git_builtin_clone_ctx->__builtin_clone_options, __builtin_clone_options, sizeof(__builtin_clone_options));
+}
+#endif
 
 static const char *get_repo_path_1(struct strbuf *path, int *is_bundle)
 {
-	static char *suffix[] = { "/.git", "", ".git/.git", ".git" };
-	static char *bundle_suffix[] = { ".bundle", "" };
+	static const char *suffix[] = { "/.git", "", ".git/.git", ".git" };
+	static const char *bundle_suffix[] = { ".bundle", "" };
 	size_t baselen = path->len;
 	struct stat st;
 	int i;
@@ -389,6 +501,13 @@ static void clone_local(const char *src_repo, const char *dest_repo)
 		fprintf(stderr, _("done.\n"));
 }
 
+#ifdef __VSF__
+#	define junk_work_tree				(git_builtin_clone_ctx->__junk_work_tree)
+#	define junk_work_tree_flags			(git_builtin_clone_ctx->__junk_work_tree_flags)
+#	define junk_git_dir					(git_builtin_clone_ctx->__junk_git_dir)
+#	define junk_git_dir_flags			(git_builtin_clone_ctx->__junk_git_dir_flags)
+#	define junk_mode					(git_builtin_clone_ctx->__junk_mode)
+#else
 static const char *junk_work_tree;
 static int junk_work_tree_flags;
 static const char *junk_git_dir;
@@ -398,6 +517,7 @@ static enum {
 	JUNK_LEAVE_REPO,
 	JUNK_LEAVE_ALL
 } junk_mode = JUNK_LEAVE_NONE;
+#endif
 
 static const char junk_leave_repo_msg[] =
 N_("Clone succeeded, but checkout failed.\n"
@@ -1112,7 +1232,7 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 
 	transport = transport_get(remote, remote->url[0]);
 	transport_set_verbosity(transport, option_verbosity, option_progress);
-	transport->family = family;
+	transport->family = __family;
 
 	path = get_repo_path(remote->url[0], &is_bundle);
 	is_local = option_local != 0 && path && !is_bundle;
@@ -1157,8 +1277,8 @@ int cmd_clone(int argc, const char **argv, const char *prefix)
 		transport_set_option(transport, TRANS_OPT_UPLOADPACK,
 				     option_upload_pack);
 
-	if (server_options.nr)
-		transport->server_options = &server_options;
+	if (__server_options.nr)
+		transport->server_options = &__server_options;
 
 	if (filter_options.choice) {
 		const char *spec =

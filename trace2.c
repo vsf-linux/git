@@ -14,6 +14,41 @@
 #include "trace2/tr2_tgt.h"
 #include "trace2/tr2_tls.h"
 
+#ifdef __VSF__
+struct __git_trace2_ctx_t {
+	int __trace2_enabled;
+	int __tr2_next_child_id;
+	int __tr2_next_exec_id;
+	int __tr2_next_repo_id;			// = 1;
+	struct tr2_tgt *__tr2_tgt_builtins[4];
+	int __tr2main_exit_code;
+};
+static void __git_trace2_mod_init(void *ctx)
+{
+	struct __git_trace2_ctx_t *__git_trace2_ctx = ctx;
+	__git_trace2_ctx->__tr2_next_repo_id = 1;
+struct tr2_tgt *__tr2_tgt_builtins[] =
+{
+	&tr2_tgt_normal,
+	&tr2_tgt_perf,
+	&tr2_tgt_event,
+	NULL
+};
+	VSF_LINUX_ASSERT(dimof(__tr2_tgt_builtins) <= dimof(__git_trace2_ctx->__tr2_tgt_builtins));
+	memcpy(__git_trace2_ctx->__tr2_tgt_builtins, __tr2_tgt_builtins, sizeof(__tr2_tgt_builtins));
+}
+define_vsf_git_mod(git_trace2,
+	sizeof(struct __git_trace2_ctx_t),
+	GIT_MOD_TRACE2,
+	__git_trace2_mod_init
+)
+#	define git_trace2_ctx			((struct __git_trace2_ctx_t *)vsf_git_ctx(git_trace2))
+#	define trace2_enabled			(git_trace2_ctx->__trace2_enabled)
+#	define tr2_next_child_id		(git_trace2_ctx->__tr2_next_child_id)
+#	define tr2_next_exec_id			(git_trace2_ctx->__tr2_next_exec_id)
+#	define tr2_next_repo_id			(git_trace2_ctx->__tr2_next_repo_id)
+#	define tr2_tgt_builtins			(git_trace2_ctx->__tr2_tgt_builtins)
+#else
 static int trace2_enabled;
 
 static int tr2_next_child_id; /* modify under lock */
@@ -33,6 +68,7 @@ static struct tr2_tgt *tr2_tgt_builtins[] =
 	&tr2_tgt_event,
 	NULL
 };
+#endif
 /* clang-format on */
 
 /* clang-format off */
@@ -83,7 +119,11 @@ static void tr2_tgt_disable_builtins(void)
 		tgt_j->pfn_term();
 }
 
+#ifdef __VSF__
+#	define tr2main_exit_code		(git_trace2_ctx->__tr2main_exit_code)
+#else
 static int tr2main_exit_code;
+#endif
 
 /*
  * Our atexit routine should run after everything has finished.

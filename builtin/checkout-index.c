@@ -15,12 +15,39 @@
 #include "parallel-checkout.h"
 
 #define CHECKOUT_ALL 4
+#ifdef __VSF__
+struct __git_builtin_checkout_index_ctx_t {
+	int __nul_term_line;
+	int __checkout_stage;
+	int __to_tempfile;
+	char __topath[4][TEMPORARY_FILENAME_LENGTH + 1];
+
+	struct checkout __state;				// = CHECKOUT_INIT;
+};
+static void __git_builtin_checkout_index_mod_init(void *ctx)
+{
+	struct __git_builtin_checkout_index_ctx_t *__git_builtin_checkout_index_ctx = ctx;
+	__git_builtin_checkout_index_ctx->__state = CHECKOUT_INIT;
+}
+define_vsf_git_mod(git_builtin_checkout_index,
+	sizeof(struct __git_builtin_checkout_index_ctx_t),
+	GIT_MOD_BUILTIN_CHECKOUT_INDEX,
+	__git_builtin_checkout_index_mod_init
+)
+#	define git_builtin_checkout_index_ctx	((struct __git_builtin_checkout_index_ctx_t *)vsf_git_ctx(git_builtin_checkout_index))
+#	define nul_term_line					(git_builtin_checkout_index_ctx->__nul_term_line)
+#	define checkout_stage					(git_builtin_checkout_index_ctx->__checkout_stage)
+#	define to_tempfile						(git_builtin_checkout_index_ctx->__to_tempfile)
+#	define topath							(git_builtin_checkout_index_ctx->__topath)
+#	define state							(git_builtin_checkout_index_ctx->__state)
+#else
 static int nul_term_line;
 static int checkout_stage; /* default to checkout stage0 */
 static int to_tempfile;
 static char topath[4][TEMPORARY_FILENAME_LENGTH + 1];
 
 static struct checkout state = CHECKOUT_INIT;
+#endif
 
 static void write_tempfile_record(const char *name, const char *prefix)
 {

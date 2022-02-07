@@ -8,16 +8,45 @@
 #include "parse-options.h"
 #include "submodule.h"
 
+#ifdef __VSF__
+struct __git_builtin_check_ignore_ctx_t {
+	int __quiet, __verbose, __stdin_paths, __show_non_matching, __no_index;
+	int __nul_term_line;
+	struct option __check_ignore_options[8];
+};
+static void __git_builtin_check_ignore_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_check_ignore,
+	sizeof(struct __git_builtin_check_ignore_ctx_t),
+	GIT_MOD_BUILTIN_CHECK_IGNORE,
+	__git_builtin_check_ignore_mod_init
+)
+#	define git_builtin_check_ignore_ctx	((struct __git_builtin_check_ignore_ctx_t *)vsf_git_ctx(git_builtin_check_ignore))
+#	define quiet						(git_builtin_check_ignore_ctx->__quiet)
+#	define verbose						(git_builtin_check_ignore_ctx->__verbose)
+#	define stdin_paths					(git_builtin_check_ignore_ctx->__stdin_paths)
+#	define show_non_matching			(git_builtin_check_ignore_ctx->__show_non_matching)
+#	define no_index						(git_builtin_check_ignore_ctx->__no_index)
+#	define nul_term_line				(git_builtin_check_ignore_ctx->__nul_term_line)
+#else
 static int quiet, verbose, stdin_paths, show_non_matching, no_index;
+#endif
 static const char * const check_ignore_usage[] = {
 "git check-ignore [<options>] <pathname>...",
 "git check-ignore [<options>] --stdin",
 NULL
 };
 
+#ifdef __VSF__
+#	define check_ignore_options			(git_builtin_check_ignore_ctx->__check_ignore_options)
+static void __git_builtin_check_ignore_mod_init(void *ctx)
+{
+	struct __git_builtin_check_ignore_ctx_t *__git_builtin_check_ignore_ctx = ctx;
+const struct option __check_ignore_options[] = {
+#else
 static int nul_term_line;
 
 static const struct option check_ignore_options[] = {
+#endif
 	OPT__QUIET(&quiet, N_("suppress progress reporting")),
 	OPT__VERBOSE(&verbose, N_("be verbose")),
 	OPT_GROUP(""),
@@ -31,6 +60,11 @@ static const struct option check_ignore_options[] = {
 		 N_("ignore index when checking")),
 	OPT_END()
 };
+#ifdef __VSF__
+	VSF_LINUX_ASSERT(dimof(__check_ignore_options) <= dimof(__git_builtin_check_ignore_ctx->__check_ignore_options));
+	memcpy(__git_builtin_check_ignore_ctx->__check_ignore_options, __check_ignore_options, sizeof(__check_ignore_options));
+}
+#endif
 
 static void output_pattern(const char *path, struct path_pattern *pattern)
 {

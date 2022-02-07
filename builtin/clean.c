@@ -20,10 +20,18 @@
 #include "help.h"
 #include "prompt.h"
 
+#ifdef __VSF__
+#	define git_builtin_clean_ctx	((struct __git_builtin_clean_ctx_t *)vsf_git_ctx(git_builtin_clean))
+#	define force					(git_builtin_clean_ctx->__force)
+#	define interactive				(git_builtin_clean_ctx->__interactive)
+#	define del_list					(git_builtin_clean_ctx->__del_list)
+#	define colopts					(git_builtin_clean_ctx->__colopts)
+#else
 static int force = -1; /* unset */
 static int interactive;
 static struct string_list del_list = STRING_LIST_INIT_DUP;
 static unsigned int colopts;
+#endif
 
 static const char *const builtin_clean_usage[] = {
 	N_("git clean [-d] [-f] [-i] [-n] [-q] [-e <pattern>] [-x | -X] [--] <paths>..."),
@@ -57,8 +65,14 @@ static const char *color_interactive_slots[] = {
 	[CLEAN_COLOR_RESET]  = "reset",
 };
 
+#ifdef __VSF__
+#	define clean_use_color			(git_builtin_clean_ctx->__clean_use_color)
+#	define clean_colors				(git_builtin_clean_ctx->__clean_colors)
+static const char __clean_colors[][COLOR_MAXLEN] = {
+#else
 static int clean_use_color = -1;
-static char clean_colors[][COLOR_MAXLEN] = {
+static const char clean_colors[][COLOR_MAXLEN] = {
+#endif
 	[CLEAN_COLOR_ERROR] = GIT_COLOR_BOLD_RED,
 	[CLEAN_COLOR_HEADER] = GIT_COLOR_BOLD,
 	[CLEAN_COLOR_HELP] = GIT_COLOR_BOLD_RED,
@@ -96,6 +110,30 @@ struct menu_stuff {
 	int nr;
 	void *stuff;
 };
+
+#ifdef __VSF__
+struct __git_builtin_clean_ctx_t {
+	int __force;					// = -1;
+	int __interactive;
+	struct string_list __del_list;	// = STRING_LIST_INIT_DUP;
+	unsigned int __colopts;
+	int __clean_use_color;			// = -1;
+	const char __clean_colors[dimof(__clean_colors)][COLOR_MAXLEN];
+};
+static void __git_builtin_clean_mod_init(void *ctx)
+{
+	struct __git_builtin_clean_ctx_t *__git_builtin_clean_ctx = ctx;
+	__git_builtin_clean_ctx->__force = -1;
+	__git_builtin_clean_ctx->__del_list = STRING_LIST_INIT_DUP;
+	__git_builtin_clean_ctx->__clean_use_color = -1;
+	memcpy(__git_builtin_clean_ctx->__clean_colors, __clean_colors, sizeof(__clean_colors));
+}
+define_vsf_git_mod(git_builtin_clean,
+	sizeof(struct __git_builtin_clean_ctx_t),
+	GIT_MOD_BUILTIN_CLEAN,
+	__git_builtin_clean_mod_init
+)
+#endif
 
 define_list_config_array(color_interactive_slots);
 

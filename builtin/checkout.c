@@ -103,6 +103,26 @@ struct branch_info {
 	char *checkout;
 };
 
+#ifdef __VSF__
+struct __git_builtin_checkout_ctx_t {
+	struct {
+		char *__ps_matched;
+	} checkout_paths;
+	char __cb_option;				// = 'b';
+};
+static void __git_builtin_checkout_mod_init(void *ctx)
+{
+	struct __git_builtin_checkout_ctx_t *__git_builtin_checkout_ctx = ctx;
+	__git_builtin_checkout_ctx->__cb_option = 'b';
+}
+define_vsf_git_mod(git_builtin_checkout,
+	sizeof(struct __git_builtin_checkout_ctx_t),
+	GIT_MOD_BUILTIN_CHECKOUT,
+	__git_builtin_checkout_mod_init
+)
+#	define git_builtin_checkout_ctx	((struct __git_builtin_checkout_ctx_t *)vsf_git_ctx(git_builtin_checkout))
+#endif
+
 static void branch_info_release(struct branch_info *info)
 {
 	free(info->name);
@@ -441,7 +461,11 @@ static int checkout_paths(const struct checkout_opts *opts,
 			  const struct branch_info *new_branch_info)
 {
 	int pos;
+#ifdef __VSF__
+#	define ps_matched				(git_builtin_checkout_ctx->checkout_paths.__ps_matched)
+#else
 	static char *ps_matched;
+#endif
 	struct object_id rev;
 	struct commit *head;
 	int errs = 0;
@@ -611,6 +635,9 @@ static int checkout_paths(const struct checkout_opts *opts,
 
 	errs |= post_checkout_hook(head, head, 0);
 	return errs;
+#ifdef __VSF__
+#	undef ps_matched
+#endif
 }
 
 static void show_local_changes(struct object *head,
@@ -1588,7 +1615,11 @@ static struct option *add_checkout_path_options(struct checkout_opts *opts,
 }
 
 /* create-branch option (either b or c) */
+#ifdef __VSF__
+#	define cb_option				(git_builtin_checkout_ctx->__cb_option)
+#else
 static char cb_option = 'b';
+#endif
 
 static int checkout_main(int argc, const char **argv, const char *prefix,
 			 struct checkout_opts *opts, struct option *options,

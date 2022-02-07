@@ -6,18 +6,47 @@
 #include "quote.h"
 #include "parse-options.h"
 
+#ifdef __VSF__
+struct __git_builtin_check_attr_ctx_t {
+	int __all_attrs;
+	int __cached_attrs;
+	int __stdin_paths;
+	int __nul_term_line;
+	const struct option __check_attr_options[5];
+};
+static void __git_builtin_check_attr_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_check_attr,
+	sizeof(struct __git_builtin_check_attr_ctx_t),
+	GIT_MOD_BUILTIN_CHECK_ATTR,
+	__git_builtin_check_attr_mod_init
+)
+#	define git_builtin_check_attr_ctx	((struct __git_builtin_check_attr_ctx_t *)vsf_git_ctx(git_builtin_check_attr))
+#	define all_attrs					(git_builtin_check_attr_ctx->__all_attrs)
+#	define cached_attrs					(git_builtin_check_attr_ctx->__cached_attrs)
+#	define stdin_paths					(git_builtin_check_attr_ctx->__stdin_paths)
+#	define nul_term_line				(git_builtin_check_attr_ctx->__nul_term_line)
+#	define check_attr_options			(git_builtin_check_attr_ctx->__check_attr_options)
+#else
 static int all_attrs;
 static int cached_attrs;
 static int stdin_paths;
+#endif
 static const char * const check_attr_usage[] = {
 N_("git check-attr [-a | --all | <attr>...] [--] <pathname>..."),
 N_("git check-attr --stdin [-z] [-a | --all | <attr>...]"),
 NULL
 };
 
+#ifdef __VSF__
+static void __git_builtin_check_attr_mod_init(void *ctx)
+{
+	struct __git_builtin_check_attr_ctx_t *__git_builtin_check_attr_ctx = ctx;
+const struct option __check_attr_options[] = {
+#else
 static int nul_term_line;
 
 static const struct option check_attr_options[] = {
+#endif
 	OPT_BOOL('a', "all", &all_attrs, N_("report all attributes set on file")),
 	OPT_BOOL(0,  "cached", &cached_attrs, N_("use .gitattributes only from the index")),
 	OPT_BOOL(0 , "stdin", &stdin_paths, N_("read file names from stdin")),
@@ -25,6 +54,11 @@ static const struct option check_attr_options[] = {
 		 N_("terminate input and output records by a NUL character")),
 	OPT_END()
 };
+#ifdef __VSF__
+	VSF_LINUX_ASSERT(dimof(__check_attr_options) <= dimof(__git_builtin_check_attr_ctx->__check_attr_options));
+	memcpy(__git_builtin_check_attr_ctx->__check_attr_options, __check_attr_options, sizeof(__check_attr_options));
+}
+#endif
 
 static void output_attr(struct attr_check *check, const char *file)
 {
