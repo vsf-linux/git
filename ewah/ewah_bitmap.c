@@ -438,8 +438,24 @@ void ewah_xor(
 }
 
 #define BITMAP_POOL_MAX 16
+#ifdef __VSF__
+struct __git_ewah_bitmap_ctx_t {
+	struct ewah_bitmap *__bitmap_pool[BITMAP_POOL_MAX];
+	size_t __bitmap_pool_size;
+};
+define_vsf_git_mod(git_ewah_bitmap,
+	sizeof(struct __git_ewah_bitmap_ctx_t),
+	GIT_MOD_EWAH_BITMAP,
+	NULL
+)
+#	define git_ewah_bitmap_ctx	((struct __git_ewah_bitmap_ctx_t *)vsf_git_ctx(git_ewah_bitmap))
+
+#	define bitmap_pool			(git_ewah_bitmap_ctx->__bitmap_pool)
+#	define bitmap_pool_size		(git_ewah_bitmap_ctx->__bitmap_pool_size)
+#else
 static struct ewah_bitmap *bitmap_pool[BITMAP_POOL_MAX];
 static size_t bitmap_pool_size;
+#endif
 
 struct ewah_bitmap *ewah_pool_new(void)
 {

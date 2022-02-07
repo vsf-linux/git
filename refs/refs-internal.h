@@ -492,7 +492,16 @@ struct ref_iterator_vtable {
  * refname lookup in a common case. current_ref_iter is set to NULL
  * when the iteration is over.
  */
+#ifdef __VSF__
+struct __git_refs_iterator_ctx_t {
+	struct ref_iterator *__current_ref_iter;
+};
+declare_vsf_git_mod(git_refs_iterator)
+#	define git_refs_iterator_ctx	((struct __git_refs_iterator_ctx_t *)vsf_git_ctx(git_refs_iterator))
+#	define current_ref_iter			(git_refs_iterator_ctx->__current_ref_iter)
+#else
 extern struct ref_iterator *current_ref_iter;
+#endif
 
 /*
  * The common backend for the for_each_*ref* functions. Call fn for
@@ -677,8 +686,8 @@ struct ref_storage_be {
 	reflog_expire_fn *reflog_expire;
 };
 
-extern struct ref_storage_be refs_be_files;
-extern struct ref_storage_be refs_be_packed;
+extern const struct ref_storage_be refs_be_files;
+extern const struct ref_storage_be refs_be_packed;
 
 /*
  * A representation of the reference store for the main repository or

@@ -20,6 +20,10 @@
 #ifndef _REGEX_INTERNAL_H
 #define _REGEX_INTERNAL_H 1
 
+#ifdef __VSF__
+#	include "git_config.h"
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>

@@ -20,7 +20,22 @@
  * how many files we can write to a directory before entering discard mode.
  * This can be overridden via the TR2_SYSENV_MAX_FILES setting.
  */
+#ifdef __VSF__
+struct __git_trace2_dst_ctx_t {
+	int __tr2env_max_files;
+	
+};
+define_vsf_git_mod(git_trace2_dst,
+	sizeof(struct __git_trace2_dst_ctx_t),
+	GIT_MOD_TRACE2_DST,
+	NULL
+)
+#	define git_trace2_dst_ctx		((struct __git_trace2_dst_ctx_t *)vsf_git_ctx(git_trace2_dst))
+
+#	define tr2env_max_files			(git_trace2_dst_ctx->__tr2env_max_files)
+#else
 static int tr2env_max_files = 0;
+#endif
 
 static int tr2_dst_want_warning(void)
 {

@@ -2,7 +2,7 @@
 #include "pkt-line.h"
 #include "fetch-pack.h"
 #include "remote.h"
-#include "connect.h"
+#include "../connect.h"
 #include "oid-array.h"
 #include "protocol.h"
 

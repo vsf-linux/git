@@ -9,6 +9,27 @@
  */
 #define TR2_REGION_NESTING_INITIAL_SIZE (100)
 
+#ifdef __VSF__
+struct __git_trace2_tls_ctx_t {
+	struct tr2tls_thread_ctx *__tr2tls_thread_main;
+	uint64_t __tr2tls_us_start_process;
+	pthread_mutex_t __tr2tls_mutex;
+	pthread_key_t __tr2tls_key;
+	int __tr2_next_thread_id;
+};
+define_vsf_git_mod(git_trace2_tls,
+	sizeof(struct __git_trace2_tls_ctx_t),
+	GIT_MOD_TRACE2_TLS,
+	NULL
+)
+#define git_trace2_tls_ctx			((struct __git_trace2_tls_ctx_t *)vsf_git_ctx(git_trace2_tls))
+
+#define tr2tls_thread_main			(git_trace2_tls_ctx->__tr2tls_thread_main)
+#define tr2tls_us_start_process		(git_trace2_tls_ctx->__tr2tls_us_start_process)
+#define tr2tls_mutex				(git_trace2_tls_ctx->__tr2tls_mutex)
+#define tr2tls_key					(git_trace2_tls_ctx->__tr2tls_key)
+#define tr2_next_thread_id			(git_trace2_tls_ctx->__tr2_next_thread_id)
+#else
 static struct tr2tls_thread_ctx *tr2tls_thread_main;
 static uint64_t tr2tls_us_start_process;
 
@@ -16,6 +37,7 @@ static pthread_mutex_t tr2tls_mutex;
 static pthread_key_t tr2tls_key;
 
 static int tr2_next_thread_id; /* modify under lock */
+#endif
 
 void tr2tls_start_process_clock(void)
 {

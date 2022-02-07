@@ -3,7 +3,27 @@
 
 #define TR2_ENVVAR_PARENT_NAME "GIT_TRACE2_PARENT_NAME"
 
+#ifdef __VSF__
+struct __git_trace2_cmd_name_ctx_t {
+	struct strbuf __tr2cmdname_hierarchy;
+	
+};
+static void __git_trace2_cmd_name_mod_init(void *ctx)
+{
+	struct __git_trace2_cmd_name_ctx_t *__git_trace2_cmd_name_ctx = ctx;
+	__git_trace2_cmd_name_ctx->__tr2cmdname_hierarchy = STRBUF_INIT;
+}
+define_vsf_git_mod(git_trace2_cmd_name,
+	sizeof(struct __git_trace2_cmd_name_ctx_t),
+	GIT_MOD_TRACE2_CMD_NAME,
+	__git_trace2_cmd_name_mod_init
+)
+#	define git_trace2_cmd_name_ctx	((struct __git_trace2_cmd_name_ctx_t *)vsf_git_ctx(git_trace2_cmd_name))
+
+#	define tr2cmdname_hierarchy		(git_trace2_cmd_name_ctx->__tr2cmdname_hierarchy)
+#else
 static struct strbuf tr2cmdname_hierarchy = STRBUF_INIT;
+#endif
 
 void tr2_cmd_name_append_hierarchy(const char *name)
 {

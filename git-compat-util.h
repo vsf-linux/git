@@ -1,6 +1,10 @@
 #ifndef GIT_COMPAT_UTIL_H
 #define GIT_COMPAT_UTIL_H
 
+#ifdef __VSF__
+#	include "git_config.h"
+#endif
+
 #if __STDC_VERSION__ - 0 < 199901L
 /*
  * Git is in a testing period for mandatory C99 support in the compiler.  If
@@ -1364,7 +1368,10 @@ int cmd_main(int, const char **);
  * optionally emit a message before calling the real exit().
  */
 int trace2_cmd_exit_fl(const char *file, int line, int code);
+#ifndef __VSF__
+// in VSF raw exit maybe the real exit in host_os, vsf will be exited if called
 #define exit(code) exit(trace2_cmd_exit_fl(__FILE__, __LINE__, (code)))
+#endif
 
 /*
  * You can mark a stack variable with UNLEAK(var) to avoid it being

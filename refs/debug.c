@@ -2,14 +2,33 @@
 #include "refs-internal.h"
 #include "trace.h"
 
+#ifdef __VSF__
+struct __git_refs_debug_ctx_t {
+	struct trace_key __trace_refs;
+};
+static void __git_refs_debug_mod_init(void *ctx)
+{
+	struct __git_refs_debug_ctx_t *__git_refs_debug_ctx = ctx;
+	__git_refs_debug_ctx->__trace_refs = TRACE_KEY_INIT(REFS);
+}
+define_vsf_git_mod(git_refs_debug,
+	sizeof(struct __git_refs_debug_ctx_t),
+	GIT_MOD_REFS_DEBUG,
+	__git_refs_debug_mod_init
+)
+#	define git_refs_debug_ctx	((struct __git_refs_debug_ctx_t *)vsf_git_ctx(git_refs_debug))
+
+#	define trace_refs		(git_refs_debug_ctx->__trace_refs)
+#else
 static struct trace_key trace_refs = TRACE_KEY_INIT(REFS);
+#endif
 
 struct debug_ref_store {
 	struct ref_store base;
 	struct ref_store *refs;
 };
 
-extern struct ref_storage_be refs_be_debug;
+extern const struct ref_storage_be refs_be_debug;
 
 struct ref_store *maybe_debug_wrap_ref_store(const char *gitdir, struct ref_store *store)
 {
@@ -417,7 +436,7 @@ static int debug_reflog_expire(struct ref_store *ref_store, const char *refname,
 	return res;
 }
 
-struct ref_storage_be refs_be_debug = {
+const struct ref_storage_be refs_be_debug = {
 	NULL,
 	"debug",
 	NULL,

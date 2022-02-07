@@ -3,6 +3,30 @@
 #include "trace2/tr2_cfg.h"
 #include "trace2/tr2_sysenv.h"
 
+#ifdef __VSF__
+struct __git_trace2_cfg_ctx_t {
+	struct strbuf **__tr2_cfg_patterns;
+	int __tr2_cfg_count_patterns;
+	int __tr2_cfg_loaded;
+
+	struct strbuf **__tr2_cfg_env_vars;
+	int __tr2_cfg_env_vars_count;
+	int __tr2_cfg_env_vars_loaded;
+};
+define_vsf_git_mod(git_trace2_cfg,
+	sizeof(struct __git_trace2_cfg_ctx_t),
+	GIT_MOD_TRACE2_CFG,
+	NULL
+)
+#	define git_trace2_cfg_ctx		((struct __git_trace2_cfg_ctx_t *)vsf_git_ctx(git_trace2_cfg))
+
+#	define tr2_cfg_patterns			(git_trace2_cfg_ctx->__tr2_cfg_patterns)
+#	define tr2_cfg_count_patterns	(git_trace2_cfg_ctx->__tr2_cfg_count_patterns)
+#	define tr2_cfg_loaded			(git_trace2_cfg_ctx->__tr2_cfg_loaded)
+#	define tr2_cfg_env_vars			(git_trace2_cfg_ctx->__tr2_cfg_env_vars)
+#	define tr2_cfg_env_vars_count	(git_trace2_cfg_ctx->__tr2_cfg_env_vars_count)
+#	define tr2_cfg_env_vars_loaded	(git_trace2_cfg_ctx->__tr2_cfg_env_vars_loaded)
+#else
 static struct strbuf **tr2_cfg_patterns;
 static int tr2_cfg_count_patterns;
 static int tr2_cfg_loaded;
@@ -10,6 +34,7 @@ static int tr2_cfg_loaded;
 static struct strbuf **tr2_cfg_env_vars;
 static int tr2_cfg_env_vars_count;
 static int tr2_cfg_env_vars_loaded;
+#endif
 
 /*
  * Parse a string containing a comma-delimited list of config keys

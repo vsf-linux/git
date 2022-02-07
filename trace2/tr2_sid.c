@@ -4,8 +4,29 @@
 
 #define TR2_ENVVAR_PARENT_SID "GIT_TRACE2_PARENT_SID"
 
+#ifdef __VSF__
+struct __git_trace2_sid_ctx_t {
+	struct strbuf __tr2sid_buf;
+	int __tr2sid_nr_git_parents;
+};
+static void __git_trace2_sid_mod_init(void *ctx)
+{
+	struct __git_trace2_sid_ctx_t *__git_trace2_sid_ctx = ctx;
+	__git_trace2_sid_ctx->__tr2sid_buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_trace2_sid,
+	sizeof(struct __git_trace2_sid_ctx_t),
+	GIT_MOD_TRACE2_SID,
+	__git_trace2_sid_mod_init
+)
+#	define git_trace2_sid_ctx		((struct __git_trace2_sid_ctx_t *)vsf_git_ctx(git_trace2_sid))
+
+#	define tr2sid_buf				(git_trace2_sid_ctx->__tr2sid_buf)
+#	define tr2sid_nr_git_parents	(git_trace2_sid_ctx->__tr2sid_nr_git_parents)
+#else
 static struct strbuf tr2sid_buf = STRBUF_INIT;
 static int tr2sid_nr_git_parents;
+#endif
 
 /*
  * Compute the final component of the SID representing the current process.

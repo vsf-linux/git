@@ -182,6 +182,14 @@ struct obstack		/* control current object in current chunk */
 				   compatibility.  */
 };
 
+#ifdef __VSF__
+struct __git_obstack_ctx_t {
+	void (*__obstack_alloc_failed_handler)(void);
+};
+declare_vsf_git_mod(git_obstack)
+#	define git_obstack_ctx		((struct __git_obstack_ctx_t *)vsf_git_ctx(git_obstack))
+#endif
+
 /* Declare the external functions we use; they are in obstack.c.  */
 
 extern void _obstack_newchunk (struct obstack *, int);
@@ -199,7 +207,11 @@ void obstack_free (struct obstack *, void *);
    more memory.  This can be set to a user defined function which
    should either abort gracefully or use longjump - but shouldn't
    return.  The default action is to print a message and abort.  */
+#ifdef __VSF__
+#	define obstack_alloc_failed_handler		(git_obstack_ctx->__obstack_alloc_failed_handler)
+#else
 extern void (*obstack_alloc_failed_handler) (void);
+#endif
 
 /* Pointer to beginning of object being allocated or to be allocated next.
    Note that this might not be the final address of the object

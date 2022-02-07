@@ -35,6 +35,25 @@
 #include "packfile.h"
 #include "repository.h"
 
+#ifdef __VSF__
+struct __git_builtin_am_ctx_t {
+	struct {
+		struct strbuf __sb;				// = STRBUF_INIT;
+	} msgnum;
+};
+static void __git_builtin_am_mod_init(void *ctx)
+{
+	struct __git_builtin_am_ctx_t *__git_builtin_am_ctx = ctx;
+	__git_builtin_am_ctx->msgnum.__sb = STRBUF_INIT;
+}
+define_vsf_git_mod(git_builtin_am,
+	sizeof(struct __git_builtin_am_ctx_t),
+	GIT_MOD_BUILTIN_AM,
+	__git_builtin_am_mod_init
+)
+#	define git_builtin_am_ctx		((struct __git_builtin_am_ctx_t *)vsf_git_ctx(git_builtin_am))
+#endif
+
 /**
  * Returns the length of the first line of msg.
  */
@@ -1131,12 +1150,19 @@ static void am_next(struct am_state *state)
  */
 static const char *msgnum(const struct am_state *state)
 {
+#ifdef __VSF__
+#	define sb						(git_builtin_am_ctx->msgnum.__sb)
+#else
 	static struct strbuf sb = STRBUF_INIT;
+#endif
 
 	strbuf_reset(&sb);
 	strbuf_addf(&sb, "%0*d", state->prec, state->cur);
 
 	return sb.buf;
+#ifdef __VSF__
+#	undef sb
+#endif
 }
 
 /**

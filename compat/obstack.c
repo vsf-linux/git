@@ -92,7 +92,9 @@ enum
    variable by default points to the internal function
    `print_and_abort'.  */
 static void print_and_abort (void);
+#ifndef __VSF__
 void (*obstack_alloc_failed_handler) (void) = print_and_abort;
+#endif
 
 # ifdef _LIBC
 #  if SHLIB_COMPAT (libc, GLIBC_2_0, GLIBC_2_3_4)
@@ -103,6 +105,19 @@ struct obstack *_obstack_compat;
 compat_symbol (libc, _obstack_compat, _obstack, GLIBC_2_0);
 #  endif
 # endif
+
+#ifdef __VSF__
+static void __git_obstack_mod_init(void *ctx)
+{
+	struct __git_obstack_ctx_t *__git_obstack_ctx = ctx;
+	__git_obstack_ctx->__obstack_alloc_failed_handler = print_and_abort;
+}
+define_vsf_git_mod(git_obstack,
+	sizeof(struct __git_obstack_ctx_t),
+	GIT_MOD_OBSTACK,
+	__git_obstack_mod_init
+)
+#endif
 
 /* Define a macro that either calls functions with the traditional malloc/free
    calling interface, or calls functions with the mmalloc/mfree interface

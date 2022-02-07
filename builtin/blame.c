@@ -38,22 +38,96 @@ static const char *blame_opt_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_builtin_blame_ctx_t {
+	int __longest_file;
+	int __longest_author;
+	int __max_orig_digits;
+	int __max_digits;
+	int __max_score_digits;
+	int __show_root;
+	int __reverse;
+	int __blank_boundary;
+	int __incremental;
+	int __xdl_opts;
+	int __abbrev;								// = -1;
+	int __no_whole_file_rename;
+	int __show_progress;
+	char __repeated_meta_color[COLOR_MAXLEN];
+	int __coloring_mode;
+	struct string_list __ignore_revs_file_list;	// = STRING_LIST_INIT_NODUP;
+	int __mark_unblamable_lines;
+	int __mark_ignored_lines;
+	struct date_mode __blame_date_mode;			// = { DATE_ISO8601 };
+	size_t __blame_date_width;
+	struct string_list __mailmap;				// = STRING_LIST_INIT_NODUP;
+	unsigned __blame_move_score;
+	unsigned __blame_copy_score;
+
+	struct color_field {
+		timestamp_t hop;
+		char col[COLOR_MAXLEN];
+	} *__colorfield;
+	int __colorfield_nr, __colorfield_alloc;
+	struct {
+		struct strbuf __time_buf;				// = STRBUF_INIT;
+	} format_time;
+};
+static void __git_builtin_blame_mod_init(void *ctx)
+{
+	struct __git_builtin_blame_ctx_t *__git_builtin_blame_ctx = ctx;
+	__git_builtin_blame_ctx->__abbrev = -1;
+	__git_builtin_blame_ctx->__ignore_revs_file_list = STRING_LIST_INIT_NODUP;
+	__git_builtin_blame_ctx->__blame_date_mode = (struct date_mode){ DATE_ISO8601 };
+	__git_builtin_blame_ctx->__mailmap = STRING_LIST_INIT_NODUP;
+	__git_builtin_blame_ctx->format_time.__time_buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_builtin_blame,
+	sizeof(struct __git_builtin_blame_ctx_t),
+	GIT_MOD_BUILTIN_BLAME,
+	__git_builtin_blame_mod_init
+)
+#	define git_builtin_blame_ctx	((struct __git_builtin_blame_ctx_t *)vsf_git_ctx(git_builtin_blame))
+#	define longest_file				(git_builtin_blame_ctx->__longest_file)
+#	define longest_author			(git_builtin_blame_ctx->__longest_author)
+#	define max_orig_digits			(git_builtin_blame_ctx->__max_orig_digits)
+#	define max_digits				(git_builtin_blame_ctx->__max_digits)
+#	define max_score_digits			(git_builtin_blame_ctx->__max_score_digits)
+#	define __show_root				(git_builtin_blame_ctx->__show_root)
+#	define __reverse				(git_builtin_blame_ctx->__reverse)
+#	define blank_boundary			(git_builtin_blame_ctx->__blank_boundary)
+#	define incremental				(git_builtin_blame_ctx->__incremental)
+#	define __xdl_opts				(git_builtin_blame_ctx->__xdl_opts)
+#	define abbrev					(git_builtin_blame_ctx->__abbrev)
+#	define __no_whole_file_rename	(git_builtin_blame_ctx->__no_whole_file_rename)
+#	define show_progress			(git_builtin_blame_ctx->__show_progress)
+#	define repeated_meta_color		(git_builtin_blame_ctx->__repeated_meta_color)
+#	define coloring_mode			(git_builtin_blame_ctx->__coloring_mode)
+#	define __ignore_revs_file_list	(git_builtin_blame_ctx->__ignore_revs_file_list)
+#	define mark_unblamable_lines	(git_builtin_blame_ctx->__mark_unblamable_lines)
+#	define mark_ignored_lines		(git_builtin_blame_ctx->__mark_ignored_lines)
+#	define blame_date_mode			(git_builtin_blame_ctx->__blame_date_mode)
+#	define blame_date_width			(git_builtin_blame_ctx->__blame_date_width)
+#	define mailmap					(git_builtin_blame_ctx->__mailmap)
+#	define blame_move_score			(git_builtin_blame_ctx->__blame_move_score)
+#	define blame_copy_score			(git_builtin_blame_ctx->__blame_copy_score)
+#else
 static int longest_file;
 static int longest_author;
 static int max_orig_digits;
 static int max_digits;
 static int max_score_digits;
-static int show_root;
-static int reverse;
+static int __show_root;
+static int __reverse;
 static int blank_boundary;
 static int incremental;
-static int xdl_opts;
+static int __xdl_opts;
 static int abbrev = -1;
-static int no_whole_file_rename;
+static int __no_whole_file_rename;
 static int show_progress;
 static char repeated_meta_color[COLOR_MAXLEN];
 static int coloring_mode;
-static struct string_list ignore_revs_file_list = STRING_LIST_INIT_NODUP;
+static struct string_list __ignore_revs_file_list = STRING_LIST_INIT_NODUP;
 static int mark_unblamable_lines;
 static int mark_ignored_lines;
 
@@ -61,13 +135,16 @@ static struct date_mode blame_date_mode = { DATE_ISO8601 };
 static size_t blame_date_width;
 
 static struct string_list mailmap = STRING_LIST_INIT_NODUP;
+#endif
 
 #ifndef DEBUG_BLAME
 #define DEBUG_BLAME 0
 #endif
 
+#ifndef __VSF__
 static unsigned blame_move_score;
 static unsigned blame_copy_score;
+#endif
 
 /* Remember to update object flag allocation in object.h */
 #define METAINFO_SHOWN		(1u<<12)
@@ -291,7 +368,11 @@ static void found_guilty_entry(struct blame_entry *ent, void *data)
 static const char *format_time(timestamp_t time, const char *tz_str,
 			       int show_raw_time)
 {
+#ifdef __VSF__
+#	define time_buf					(git_builtin_blame_ctx->format_time.__time_buf)
+#else
 	static struct strbuf time_buf = STRBUF_INIT;
+#endif
 
 	strbuf_reset(&time_buf);
 	if (show_raw_time) {
@@ -314,6 +395,9 @@ static const char *format_time(timestamp_t time, const char *tz_str,
 			strbuf_addch(&time_buf, ' ');
 	}
 	return time_buf.buf;
+#ifdef __VSF__
+#	undef time_buf
+#endif
 }
 
 #define OUTPUT_ANNOTATE_COMPAT      (1U<<0)
@@ -375,11 +459,17 @@ static void emit_porcelain(struct blame_scoreboard *sb, struct blame_entry *ent,
 		putchar('\n');
 }
 
+#ifdef __VSF__
+#	define colorfield				(git_builtin_blame_ctx->__colorfield)
+#	define colorfield_nr			(git_builtin_blame_ctx->__colorfield_nr)
+#	define colorfield_alloc			(git_builtin_blame_ctx->__colorfield_alloc)
+#else
 static struct color_field {
 	timestamp_t hop;
 	char col[COLOR_MAXLEN];
 } *colorfield;
 static int colorfield_nr, colorfield_alloc;
+#endif
 
 static void parse_color_fields(const char *s)
 {
@@ -680,7 +770,7 @@ static const char *add_prefix(const char *prefix, const char *path)
 static int git_blame_config(const char *var, const char *value, void *cb)
 {
 	if (!strcmp(var, "blame.showroot")) {
-		show_root = git_config_bool(var, value);
+		__show_root = git_config_bool(var, value);
 		return 0;
 	}
 	if (!strcmp(var, "blame.blankboundary")) {
@@ -708,7 +798,7 @@ static int git_blame_config(const char *var, const char *value, void *cb)
 		ret = git_config_pathname(&str, var, value);
 		if (ret)
 			return ret;
-		string_list_insert(&ignore_revs_file_list, str);
+		string_list_insert(&__ignore_revs_file_list, str);
 		return 0;
 	}
 	if (!strcmp(var, "blame.markunblamablelines")) {
@@ -862,7 +952,7 @@ int cmd_blame(int argc, const char **argv, const char *prefix)
 	const struct option options[] = {
 		OPT_BOOL(0, "incremental", &incremental, N_("show blame entries as we find them, incrementally")),
 		OPT_BOOL('b', NULL, &blank_boundary, N_("do not show object names of boundary commits (Default: off)")),
-		OPT_BOOL(0, "root", &show_root, N_("do not treat root commits as boundaries (Default: off)")),
+		OPT_BOOL(0, "root", &__show_root, N_("do not treat root commits as boundaries (Default: off)")),
 		OPT_BOOL(0, "show-stats", &show_stats, N_("show work cost statistics")),
 		OPT_BOOL(0, "progress", &show_progress, N_("force progress reporting")),
 		OPT_BIT(0, "score-debug", &output_option, N_("show output score for blame entries"), OUTPUT_SHOW_SCORE),
@@ -875,12 +965,12 @@ int cmd_blame(int argc, const char **argv, const char *prefix)
 		OPT_BIT('l', NULL, &output_option, N_("show long commit SHA1 (Default: off)"), OUTPUT_LONG_OBJECT_NAME),
 		OPT_BIT('s', NULL, &output_option, N_("suppress author name and timestamp (Default: off)"), OUTPUT_NO_AUTHOR),
 		OPT_BIT('e', "show-email", &output_option, N_("show author email instead of name (Default: off)"), OUTPUT_SHOW_EMAIL),
-		OPT_BIT('w', NULL, &xdl_opts, N_("ignore whitespace differences"), XDF_IGNORE_WHITESPACE),
+		OPT_BIT('w', NULL, &__xdl_opts, N_("ignore whitespace differences"), XDF_IGNORE_WHITESPACE),
 		OPT_STRING_LIST(0, "ignore-rev", &ignore_rev_list, N_("rev"), N_("ignore <rev> when blaming")),
-		OPT_STRING_LIST(0, "ignore-revs-file", &ignore_revs_file_list, N_("file"), N_("ignore revisions from <file>")),
+		OPT_STRING_LIST(0, "ignore-revs-file", &__ignore_revs_file_list, N_("file"), N_("ignore revisions from <file>")),
 		OPT_BIT(0, "color-lines", &output_option, N_("color redundant metadata from previous line differently"), OUTPUT_COLOR_LINE),
 		OPT_BIT(0, "color-by-age", &output_option, N_("color lines by age"), OUTPUT_SHOW_AGE_WITH_COLOR),
-		OPT_BIT(0, "minimal", &xdl_opts, N_("spend extra cycles to find better match"), XDF_NEED_MINIMAL),
+		OPT_BIT(0, "minimal", &__xdl_opts, N_("spend extra cycles to find better match"), XDF_NEED_MINIMAL),
 		OPT_STRING('S', NULL, &revs_file, N_("file"), N_("use revisions from <file> instead of calling git-rev-list")),
 		OPT_STRING(0, "contents", &contents_from, N_("file"), N_("use <file>'s contents as the final image")),
 		OPT_CALLBACK_F('C', NULL, &opt, N_("score"), N_("find line copies within and across files"), PARSE_OPT_OPTARG, blame_copy_callback),
@@ -929,13 +1019,13 @@ int cmd_blame(int argc, const char **argv, const char *prefix)
 
 		if (!strcmp(ctx.argv[0], "--reverse")) {
 			ctx.argv[0] = "--children";
-			reverse = 1;
+			__reverse = 1;
 		}
 		parse_revision_opt(&revs, &ctx, options, blame_opt_usage);
 	}
 parse_done:
-	no_whole_file_rename = !revs.diffopt.flags.follow_renames;
-	xdl_opts |= revs.diffopt.xdl_opts & XDF_INDENT_HEURISTIC;
+	__no_whole_file_rename = !revs.diffopt.flags.follow_renames;
+	__xdl_opts |= revs.diffopt.xdl_opts & XDF_INDENT_HEURISTIC;
 	revs.diffopt.flags.follow_renames = 0;
 	argc = parse_options_end(&ctx);
 
@@ -1081,11 +1171,11 @@ parse_done:
 	init_scoreboard(&sb);
 	sb.revs = &revs;
 	sb.contents_from = contents_from;
-	sb.reverse = reverse;
+	sb.reverse = __reverse;
 	sb.repo = the_repository;
 	sb.path = path;
-	build_ignorelist(&sb, &ignore_revs_file_list, &ignore_rev_list);
-	string_list_clear(&ignore_revs_file_list, 0);
+	build_ignorelist(&sb, &__ignore_revs_file_list, &ignore_rev_list);
+	string_list_clear(&__ignore_revs_file_list, 0);
 	string_list_clear(&ignore_rev_list, 0);
 	setup_scoreboard(&sb, &o);
 
@@ -1147,9 +1237,9 @@ parse_done:
 	sb.debug = DEBUG_BLAME;
 	sb.on_sanity_fail = &sanity_check_on_fail;
 
-	sb.show_root = show_root;
-	sb.xdl_opts = xdl_opts;
-	sb.no_whole_file_rename = no_whole_file_rename;
+	sb.show_root = __show_root;
+	sb.xdl_opts = __xdl_opts;
+	sb.no_whole_file_rename = __no_whole_file_rename;
 
 	read_mailmap(&mailmap);
 

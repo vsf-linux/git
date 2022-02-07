@@ -455,7 +455,7 @@ static int cache_ref_iterator_abort(struct ref_iterator *ref_iterator)
 	return ITER_DONE;
 }
 
-static struct ref_iterator_vtable cache_ref_iterator_vtable = {
+static const struct ref_iterator_vtable cache_ref_iterator_vtable = {
 	cache_ref_iterator_advance,
 	cache_ref_iterator_peel,
 	cache_ref_iterator_abort

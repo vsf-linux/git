@@ -26,7 +26,21 @@
  */
 #define POPPED		(1U << 5)
 
+#ifdef __VSF__
+struct __git_negotiator_skipping_ctx_t {
+	int __marked;
+};
+define_vsf_git_mod(git_negotiator_skipping,
+	sizeof(struct __git_negotiator_skipping_ctx_t),
+	GIT_MOD_NEGOTIATOR_SKIPPING,
+	NULL
+)
+#	define git_negotiator_skipping_ctx	((struct __git_negotiator_skipping_ctx_t *)vsf_git_ctx(git_negotiator_skipping))
+
+#	define marked		(git_negotiator_skipping_ctx->__marked)
+#else
 static int marked;
+#endif
 
 /*
  * An entry in the priority queue.

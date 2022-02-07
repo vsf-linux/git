@@ -28,12 +28,42 @@ enum mmap_strategy {
 	MMAP_OK
 };
 
+#ifdef __VSF__
+struct __git_refs_packed_backend_ctx_t {
+	enum mmap_strategy __mmap_strategy;
+	struct {
+		int __timeout_configured;
+		int __timeout_value;
+	} packed_refs_lock;
+};
+static void __git_refs_packed_backend_mod_init(void *ctx)
+{
+	struct __git_refs_packed_backend_ctx_t *__git_refs_packed_backend_ctx = ctx;
+#if defined(NO_MMAP)
+	__git_refs_packed_backend_ctx->__mmap_strategy = MMAP_NONE;
+#elif defined(MMAP_PREVENTS_DELETE)
+	__git_refs_packed_backend_ctx->__mmap_strategy = MMAP_TEMPORARY;
+#else
+	__git_refs_packed_backend_ctx->__mmap_strategy = MMAP_OK;
+#endif
+	__git_refs_packed_backend_ctx->packed_refs_lock.__timeout_value = 1000;
+}
+define_vsf_git_mod(git_refs_packed_backend,
+	sizeof(struct __git_refs_packed_backend_ctx_t),
+	GIT_MOD_REFS_PACKED_BACKEND,
+	__git_refs_packed_backend_mod_init
+)
+
+#	define git_refs_packed_backend_ctx	((struct __git_refs_packed_backend_ctx_t *)vsf_git_ctx(git_refs_packed_backend))
+#	define mmap_strategy				(git_refs_packed_backend_ctx->__mmap_strategy)
+#else
 #if defined(NO_MMAP)
 static enum mmap_strategy mmap_strategy = MMAP_NONE;
 #elif defined(MMAP_PREVENTS_DELETE)
 static enum mmap_strategy mmap_strategy = MMAP_TEMPORARY;
 #else
 static enum mmap_strategy mmap_strategy = MMAP_OK;
+#endif
 #endif
 
 struct packed_ref_store;
@@ -910,7 +940,7 @@ static int packed_ref_iterator_abort(struct ref_iterator *ref_iterator)
 	return ok;
 }
 
-static struct ref_iterator_vtable packed_ref_iterator_vtable = {
+static const struct ref_iterator_vtable packed_ref_iterator_vtable = {
 	packed_ref_iterator_advance,
 	packed_ref_iterator_peel,
 	packed_ref_iterator_abort
@@ -948,7 +978,7 @@ static struct ref_iterator *packed_ref_iterator_begin(
 
 	CALLOC_ARRAY(iter, 1);
 	ref_iterator = &iter->base;
-	base_ref_iterator_init(ref_iterator, &packed_ref_iterator_vtable, 1);
+	base_ref_iterator_init(ref_iterator, (struct ref_iterator_vtable *)&packed_ref_iterator_vtable, 1);
 
 	iter->snapshot = snapshot;
 	acquire_snapshot(snapshot);
@@ -991,8 +1021,13 @@ int packed_refs_lock(struct ref_store *ref_store, int flags, struct strbuf *err)
 	struct packed_ref_store *refs =
 		packed_downcast(ref_store, REF_STORE_WRITE | REF_STORE_MAIN,
 				"packed_refs_lock");
+#ifdef __VSF__
+#	define timeout_configured			(git_refs_packed_backend_ctx->packed_refs_lock.__timeout_configured)
+#	define timeout_value				(git_refs_packed_backend_ctx->packed_refs_lock.__timeout_value)
+#else
 	static int timeout_configured = 0;
 	static int timeout_value = 1000;
+#endif
 
 	if (!timeout_configured) {
 		git_config_get_int("core.packedrefstimeout", &timeout_value);
@@ -1043,6 +1078,10 @@ int packed_refs_lock(struct ref_store *ref_store, int flags, struct strbuf *err)
 	 */
 	get_snapshot(refs);
 	return 0;
+#ifdef __VSF__
+#	undef timeout_configured
+#	undef timeout_value
+#endif
 }
 
 void packed_refs_unlock(struct ref_store *ref_store)
@@ -1652,7 +1691,7 @@ static int packed_reflog_expire(struct ref_store *ref_store,
 	return 0;
 }
 
-struct ref_storage_be refs_be_packed = {
+const struct ref_storage_be refs_be_packed = {
 	NULL,
 	"packed",
 	packed_ref_store_create,

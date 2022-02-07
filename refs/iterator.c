@@ -200,7 +200,7 @@ static int merge_ref_iterator_abort(struct ref_iterator *ref_iterator)
 	return ok;
 }
 
-static struct ref_iterator_vtable merge_ref_iterator_vtable = {
+static const struct ref_iterator_vtable merge_ref_iterator_vtable = {
 	merge_ref_iterator_advance,
 	merge_ref_iterator_peel,
 	merge_ref_iterator_abort
@@ -377,7 +377,7 @@ static int prefix_ref_iterator_abort(struct ref_iterator *ref_iterator)
 	return ok;
 }
 
-static struct ref_iterator_vtable prefix_ref_iterator_vtable = {
+static const struct ref_iterator_vtable prefix_ref_iterator_vtable = {
 	prefix_ref_iterator_advance,
 	prefix_ref_iterator_peel,
 	prefix_ref_iterator_abort
@@ -405,7 +405,15 @@ struct ref_iterator *prefix_ref_iterator_begin(struct ref_iterator *iter0,
 	return ref_iterator;
 }
 
+#ifdef __VSF__
+define_vsf_git_mod(git_refs_iterator,
+	sizeof(struct __git_refs_iterator_ctx_t),
+	GIT_MOD_REFS_ITERATOR,
+	NULL
+)
+#else
 struct ref_iterator *current_ref_iter = NULL;
+#endif
 
 int do_for_each_repo_ref_iterator(struct repository *r, struct ref_iterator *iter,
 				  each_repo_ref_fn fn, void *cb_data)

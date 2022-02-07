@@ -26,7 +26,11 @@ struct tr2_sysenv_entry {
  * from parent to child git processes, rather than settings.
  */
 /* clang-format off */
+#ifdef __VSF__
+static const struct tr2_sysenv_entry __tr2_sysenv_settings[] = {
+#else
 static struct tr2_sysenv_entry tr2_sysenv_settings[] = {
+#endif
 	[TR2_SYSENV_CFG_PARAM]     = { "GIT_TRACE2_CONFIG_PARAMS",
 				       "trace2.configparams" },
 	[TR2_SYSENV_ENV_VARS]      = { "GIT_TRACE2_ENV_VARS",
@@ -56,6 +60,25 @@ static struct tr2_sysenv_entry tr2_sysenv_settings[] = {
 				       "trace2.maxfiles" },
 };
 /* clang-format on */
+
+#ifdef __VSF__
+struct __git_trace2_sysenv_ctx_t {
+	struct tr2_sysenv_entry __tr2_sysenv_settings[dimof(__tr2_sysenv_settings)];
+};
+static void __git_trace2_sysenv_mod_init(void *ctx)
+{
+	struct __git_trace2_sysenv_ctx_t *__git_trace2_sysenv_ctx = ctx;
+	memcpy(__git_trace2_sysenv_ctx->__tr2_sysenv_settings, __tr2_sysenv_settings, sizeof(__tr2_sysenv_settings));
+}
+define_vsf_git_mod(git_trace2_sysenv,
+	sizeof(struct __git_trace2_sysenv_ctx_t),
+	GIT_MOD_TRACE2_SYSENV,
+	__git_trace2_sysenv_mod_init
+)
+#	define git_trace2_sysenv_ctx	((struct __git_trace2_sysenv_ctx_t *)vsf_git_ctx(git_trace2_sysenv))
+
+#	define tr2_sysenv_settings		(git_trace2_sysenv_ctx->__tr2_sysenv_settings)
+#endif
 
 static int tr2_sysenv_cb(const char *key, const char *value, void *d)
 {

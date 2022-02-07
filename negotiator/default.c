@@ -12,7 +12,21 @@
 #define SEEN		(1U << 4)
 #define POPPED		(1U << 5)
 
+#ifdef __VSF__
+struct __git_negotiator_default_ctx_t {
+	int __marked;
+};
+define_vsf_git_mod(git_negotiator_default,
+	sizeof(struct __git_negotiator_default_ctx_t),
+	GIT_MOD_NEGOTIATOR_DEFAULT,
+	NULL
+)
+#	define git_negotiator_default_ctx	((struct __git_negotiator_default_ctx_t *)vsf_git_ctx(git_negotiator_default))
+
+#	define marked		(git_negotiator_default_ctx->__marked)
+#else
 static int marked;
+#endif
 
 struct negotiation_state {
 	struct prio_queue rev_list;

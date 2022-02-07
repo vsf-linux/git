@@ -10,6 +10,35 @@
 #include "quote.h"
 #include "revision.h"
 
+#ifdef __VSF__
+struct __git_builtin_bisect_helper_ctx_t {
+	char *__git_path_bisect_terms_ret;
+	char *__git_path_bisect_expected_rev_ret;
+	char *__git_path_bisect_ancestors_ok_ret;
+	char *__git_path_bisect_start_ret;
+	char *__git_path_bisect_log_ret;
+	char *__git_path_head_name_ret;
+	char *__git_path_bisect_names_ret;
+	char *__git_path_bisect_first_parent_ret;
+	char *__git_path_bisect_run_ret;
+};
+define_vsf_git_mod(git_builtin_bisect_helper,
+	sizeof(struct __git_builtin_bisect_helper_ctx_t),
+	GIT_MOD_BUILTIN_BISECT_HELPER,
+	NULL
+)
+#	define git_builtin_bisect_helper_ctx	((struct __git_builtin_bisect_helper_ctx_t *)vsf_git_ctx(git_builtin_bisect_helper))
+#	define git_path_bisect_terms_ret		(git_builtin_bisect_helper_ctx->__git_path_bisect_terms_ret)
+#	define git_path_bisect_expected_rev_ret	(git_builtin_bisect_helper_ctx->__git_path_bisect_expected_rev_ret)
+#	define git_path_bisect_ancestors_ok_ret	(git_builtin_bisect_helper_ctx->__git_path_bisect_ancestors_ok_ret)
+#	define git_path_bisect_start_ret		(git_builtin_bisect_helper_ctx->__git_path_bisect_start_ret)
+#	define git_path_bisect_log_ret			(git_builtin_bisect_helper_ctx->__git_path_bisect_log_ret)
+#	define git_path_head_name_ret			(git_builtin_bisect_helper_ctx->__git_path_head_name_ret)
+#	define git_path_bisect_names_ret		(git_builtin_bisect_helper_ctx->__git_path_bisect_names_ret)
+#	define git_path_bisect_first_parent_ret	(git_builtin_bisect_helper_ctx->__git_path_bisect_first_parent_ret)
+#	define git_path_bisect_run_ret			(git_builtin_bisect_helper_ctx->__git_path_bisect_run_ret)
+#endif
+
 static GIT_PATH_FUNC(git_path_bisect_terms, "BISECT_TERMS")
 static GIT_PATH_FUNC(git_path_bisect_expected_rev, "BISECT_EXPECTED_REV")
 static GIT_PATH_FUNC(git_path_bisect_ancestors_ok, "BISECT_ANCESTORS_OK")

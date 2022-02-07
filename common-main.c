@@ -2,6 +2,10 @@
 #include "exec-cmd.h"
 #include "attr.h"
 
+#ifdef __VSF__
+int vsf_git_dynlib_idx = -1;
+#endif
+
 /*
  * Many parts of Git have subprograms communicate via pipe, expect the
  * upstream of a pipe to die with SIGPIPE when the downstream of a
@@ -53,7 +57,11 @@ int main(int argc, const char **argv)
 	if (!strbuf_getcwd(&tmp))
 		tmp_original_cwd = strbuf_detach(&tmp, NULL);
 
-	result = cmd_main(argc, argv);
+	if (!strcmp(argv[0], "git")) {
+		result = cmd_main(argc, argv);
+	} else if (!strcmp(argv[0], "git-remote-https") || !strcmp(argv[0], "git-remote-http")) {
+		result = remote_curl_cmd_main(argc, argv);
+	}
 
 	/*
 	 * We define exit() to call trace2_cmd_exit_fl() in

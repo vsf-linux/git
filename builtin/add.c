@@ -26,6 +26,47 @@ static const char * const builtin_add_usage[] = {
 	N_("git add [<options>] [--] <pathspec>..."),
 	NULL
 };
+#ifdef __VSF__
+struct __git_builtin_add_ctx_t {
+	int __patch_interactive, __add_interactive, __edit_interactive;
+	int __take_worktree_changes;
+	int __add_renormalize;
+	int __pathspec_file_nul;
+	int __include_sparse;
+	const char *__pathspec_from_file;
+	int __legacy_stash_p;
+
+	int __verbose, __show_only, __ignored_too, __refresh_only;
+	int __ignore_add_errors, __intent_to_add, __ignore_missing;
+	int __warn_on_embedded_repo;				// = 1;
+	int __addremove;							// = ADDREMOVE_DEFAULT;
+	int __addremove_explicit;					// = -1;
+	char *__chmod_arg;
+
+	struct option __builtin_add_options[23];
+
+	struct {
+		int __adviced_on_embedded_repo;
+	} check_embedded_repo;
+};
+static void __git_builtin_add_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_add,
+	sizeof(struct __git_builtin_add_ctx_t),
+	GIT_MOD_BUILTIN_ADD,
+	__git_builtin_add_mod_init
+)
+#	define git_builtin_add_ctx		((struct __git_builtin_add_ctx_t *)vsf_git_ctx(git_builtin_add))
+
+#	define patch_interactive		(git_builtin_add_ctx->__patch_interactive)
+#	define add_interactive			(git_builtin_add_ctx->__add_interactive)
+#	define edit_interactive			(git_builtin_add_ctx->__edit_interactive)
+#	define take_worktree_changes	(git_builtin_add_ctx->__take_worktree_changes)
+#	define add_renormalize			(git_builtin_add_ctx->__add_renormalize)
+#	define pathspec_file_nul		(git_builtin_add_ctx->__pathspec_file_nul)
+#	define include_sparse			(git_builtin_add_ctx->__include_sparse)
+#	define pathspec_from_file		(git_builtin_add_ctx->__pathspec_from_file)
+#	define legacy_stash_p			(git_builtin_add_ctx->__legacy_stash_p)
+#else
 static int patch_interactive, add_interactive, edit_interactive;
 static int take_worktree_changes;
 static int add_renormalize;
@@ -33,6 +74,7 @@ static int pathspec_file_nul;
 static int include_sparse;
 static const char *pathspec_from_file;
 static int legacy_stash_p; /* support for the scripted `git stash` */
+#endif
 
 struct update_callback_data {
 	int flags;
@@ -347,15 +389,31 @@ static int edit_patch(int argc, const char **argv, const char *prefix)
 static const char ignore_error[] =
 N_("The following paths are ignored by one of your .gitignore files:\n");
 
+#ifdef __VSF__
+#	define verbose					(git_builtin_add_ctx->__verbose)
+#	define show_only				(git_builtin_add_ctx->__show_only)
+#	define ignored_too				(git_builtin_add_ctx->__ignored_too)
+#	define refresh_only				(git_builtin_add_ctx->__refresh_only)
+#	define ignore_add_errors		(git_builtin_add_ctx->__ignore_add_errors)
+#	define intent_to_add			(git_builtin_add_ctx->__intent_to_add)
+#	define ignore_missing			(git_builtin_add_ctx->__ignore_missing)
+#	define warn_on_embedded_repo	(git_builtin_add_ctx->__warn_on_embedded_repo)
+#	define addremove				(git_builtin_add_ctx->__addremove)
+#	define addremove_explicit		(git_builtin_add_ctx->__addremove_explicit)
+#	define chmod_arg				(git_builtin_add_ctx->__chmod_arg)
+#else
 static int verbose, show_only, ignored_too, refresh_only;
 static int ignore_add_errors, intent_to_add, ignore_missing;
 static int warn_on_embedded_repo = 1;
+#endif
 
 #define ADDREMOVE_DEFAULT 1
+#ifndef __VSF__
 static int addremove = ADDREMOVE_DEFAULT;
 static int addremove_explicit = -1; /* unspecified */
 
 static char *chmod_arg;
+#endif
 
 static int ignore_removal_cb(const struct option *opt, const char *arg, int unset)
 {
@@ -364,7 +422,14 @@ static int ignore_removal_cb(const struct option *opt, const char *arg, int unse
 	return 0;
 }
 
+#ifdef __VSF__
+#	define builtin_add_options		(git_builtin_add_ctx->__builtin_add_options)
+static void __git_builtin_add_init_options(struct __git_builtin_add_ctx_t *ctx)
+{
+struct option __builtin_add_options[] = {
+#else
 static struct option builtin_add_options[] = {
+#endif
 	OPT__DRY_RUN(&show_only, N_("dry run")),
 	OPT__VERBOSE(&verbose, N_("be verbose")),
 	OPT_GROUP(""),
@@ -394,6 +459,11 @@ static struct option builtin_add_options[] = {
 	OPT_PATHSPEC_FILE_NUL(&pathspec_file_nul),
 	OPT_END(),
 };
+#ifdef __VSF__
+	VSF_LINUX_ASSERT(dimof(__builtin_add_options) <= dimof(ctx->__builtin_add_options));
+	memcpy(ctx->__builtin_add_options, __builtin_add_options, sizeof(__builtin_add_options));
+}
+#endif
 
 static int add_config(const char *var, const char *value, void *cb)
 {
@@ -425,7 +495,11 @@ static const char embedded_advice[] = N_(
 static void check_embedded_repo(const char *path)
 {
 	struct strbuf name = STRBUF_INIT;
+#ifdef __VSF__
+#	define adviced_on_embedded_repo	(git_builtin_add_ctx->check_embedded_repo.__adviced_on_embedded_repo)
+#else
 	static int adviced_on_embedded_repo = 0;
+#endif
 
 	if (!warn_on_embedded_repo)
 		return;
@@ -444,6 +518,9 @@ static void check_embedded_repo(const char *path)
 	}
 
 	strbuf_release(&name);
+#ifdef __VSF__
+#	undef adviced_on_embedded_repo
+#endif
 }
 
 static int add_files(struct dir_struct *dir, int flags)
@@ -707,3 +784,14 @@ finish:
 	UNLEAK(pathspec);
 	return exit_status;
 }
+
+#ifdef __VSF__
+static void __git_builtin_add_mod_init(void *ctx)
+{
+	struct __git_builtin_add_ctx_t *__git_builtin_add_ctx = ctx;
+	__git_builtin_add_ctx->__warn_on_embedded_repo = 1;
+	__git_builtin_add_ctx->__addremove = ADDREMOVE_DEFAULT;
+	__git_builtin_add_ctx->__addremove_explicit = -1;
+	__git_builtin_add_init_options(__git_builtin_add_ctx);
+}
+#endif

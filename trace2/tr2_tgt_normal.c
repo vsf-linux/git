@@ -9,6 +9,22 @@
 #include "trace2/tr2_tgt.h"
 #include "trace2/tr2_tls.h"
 
+#ifdef __VSF__
+struct __git_trace2_tgt_normal_ctx_t {
+	struct tr2_dst __tr2dst_normal;					// = { TR2_SYSENV_NORMAL, 0, 0, 0, 0 };
+	int __tr2env_normal_be_brief;
+};
+void __git_trace2_tgt_normal_mod_init(void *ctx);
+define_vsf_git_mod(git_trace2_tgt_normal,
+	sizeof(struct __git_trace2_tgt_normal_ctx_t),
+	GIT_MOD_TRACE2_TGT_NORMAL,
+	__git_trace2_tgt_normal_mod_init
+)
+#	define git_trace2_tgt_normal_ctx	((struct __git_trace2_tgt_normal_ctx_t *)vsf_git_ctx(git_trace2_tgt_normal))
+
+#	define tr2dst_normal				(git_trace2_tgt_normal_ctx->__tr2dst_normal)
+#	define tr2env_normal_be_brief		(git_trace2_tgt_normal_ctx->__tr2env_normal_be_brief)
+#else
 static struct tr2_dst tr2dst_normal = { TR2_SYSENV_NORMAL, 0, 0, 0, 0 };
 
 /*
@@ -18,6 +34,7 @@ static struct tr2_dst tr2dst_normal = { TR2_SYSENV_NORMAL, 0, 0, 0, 0 };
  * Unit tests may want to use this to help with testing.
  */
 static int tr2env_normal_be_brief;
+#endif
 
 #define TR2FMT_NORMAL_FL_WIDTH (50)
 
@@ -324,7 +341,15 @@ static void fn_printf_va_fl(const char *file, int line,
 	strbuf_release(&buf_payload);
 }
 
+#ifdef __VSF__
+static void __git_trace2_tgt_normal_mod_init(void *ctx)
+{
+	struct __git_trace2_tgt_normal_ctx_t *__git_trace2_tgt_normal_ctx = ctx;
+	__git_trace2_tgt_normal_ctx->__tr2dst_normal = (struct tr2_dst){ TR2_SYSENV_NORMAL, 0, 0, 0, 0 };
+	tr2_tgt_normal = (struct tr2_tgt) {
+#else
 struct tr2_tgt tr2_tgt_normal = {
+#endif
 	&tr2dst_normal,
 
 	fn_init,
@@ -356,3 +381,6 @@ struct tr2_tgt tr2_tgt_normal = {
 	NULL, /* data_json */
 	fn_printf_va_fl,
 };
+#ifdef __VSF__
+}
+#endif

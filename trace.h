@@ -81,7 +81,7 @@
  * the `trace_key` structure.
  */
 struct trace_key {
-	const char * const key;
+	const char * /* const */ key;
 	int fd;
 	unsigned int initialized : 1;
 	unsigned int  need_close : 1;
@@ -89,7 +89,7 @@ struct trace_key {
 
 extern struct trace_key trace_default_key;
 
-#define TRACE_KEY_INIT(name) { .key = "GIT_TRACE_" #name }
+#define TRACE_KEY_INIT(name) (struct trace_key){ .key = "GIT_TRACE_" #name }
 extern struct trace_key trace_perf_key;
 extern struct trace_key trace_setup_key;
 

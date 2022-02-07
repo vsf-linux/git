@@ -1754,7 +1754,7 @@ static int write_ref_to_lockfile(struct ref_lock *lock,
 				 const struct object_id *oid,
 				 int skip_oid_verification, struct strbuf *err)
 {
-	static char term = '\n';
+	static const char term = '\n';
 	struct object *o;
 	int fd;
 
@@ -2207,7 +2207,7 @@ static int files_reflog_iterator_abort(struct ref_iterator *ref_iterator)
 	return ok;
 }
 
-static struct ref_iterator_vtable files_reflog_iterator_vtable = {
+static const struct ref_iterator_vtable files_reflog_iterator_vtable = {
 	files_reflog_iterator_advance,
 	files_reflog_iterator_peel,
 	files_reflog_iterator_abort
@@ -3269,7 +3269,7 @@ static int files_init_db(struct ref_store *ref_store, struct strbuf *err)
 	return 0;
 }
 
-struct ref_storage_be refs_be_files = {
+const struct ref_storage_be refs_be_files = {
 	NULL,
 	"files",
 	files_ref_store_create,

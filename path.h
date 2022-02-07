@@ -152,6 +152,15 @@ void report_linked_checkout_garbage(void);
  *
  * or use one of the global ones below.
  */
+#ifdef __VSF__
+#define GIT_PATH_FUNC(func, filename) \
+	const char *func(void) \
+	{ \
+		if (!VSF_MCONNECT(func, _, ret)) \
+			VSF_MCONNECT(func, _, ret) = git_pathdup(filename); \
+		return VSF_MCONNECT(func, _, ret); \
+	}
+#else
 #define GIT_PATH_FUNC(func, filename) \
 	const char *func(void) \
 	{ \
@@ -160,6 +169,7 @@ void report_linked_checkout_garbage(void);
 			ret = git_pathdup(filename); \
 		return ret; \
 	}
+#endif
 
 #define REPO_GIT_PATH_FUNC(var, filename) \
 	const char *git_path_##var(struct repository *r) \

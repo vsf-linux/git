@@ -135,8 +135,21 @@ struct tr2_tgt {
 };
 /* clang-format on */
 
+#ifdef __VSF__
+struct __git_trace2_tgt_ctx_t {
+	struct tr2_tgt __tr2_tgt_event;
+	struct tr2_tgt __tr2_tgt_normal;
+	struct tr2_tgt __tr2_tgt_perf;
+};
+declare_vsf_git_mod(git_trace2_tgt)
+#	define git_trace2_tgt_ctx		((struct __git_trace2_tgt_ctx_t *)vsf_git_ctx(git_trace2_tgt))
+#	define tr2_tgt_event			(git_trace2_tgt_ctx->__tr2_tgt_event)
+#	define tr2_tgt_normal			(git_trace2_tgt_ctx->__tr2_tgt_normal)
+#	define tr2_tgt_perf				(git_trace2_tgt_ctx->__tr2_tgt_perf)
+#else
 extern struct tr2_tgt tr2_tgt_event;
 extern struct tr2_tgt tr2_tgt_normal;
 extern struct tr2_tgt tr2_tgt_perf;
+#endif
 
 #endif /* TR2_TGT_H */
