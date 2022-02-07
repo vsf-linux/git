@@ -41,6 +41,111 @@
 static const char sign_off_header[] = "Signed-off-by: ";
 static const char cherry_picked_prefix[] = "(cherry picked from commit ";
 
+#ifdef __VSF__
+struct __git_sequencer_ctx_t {
+	char *__git_path_commit_editmsg_ret;
+	char *__git_path_seq_dir_ret;
+	char *__git_path_todo_file_ret;
+	char *__git_path_opts_file_ret;
+	char *__git_path_head_file_ret;
+	char *__git_path_abort_safety_file_ret;
+	char *__rebase_path_ret;
+	char *__rebase_path_todo_ret;
+	char *__rebase_path_todo_backup_ret;
+	char *__rebase_path_dropped_ret;
+	char *__rebase_path_done_ret;
+	char *__rebase_path_msgnum_ret;
+	char *__rebase_path_msgtotal_ret;
+	char *__rebase_path_message_ret;
+	char *__rebase_path_squash_msg_ret;
+	char *__rebase_path_fixup_msg_ret;
+	char *__rebase_path_current_fixups_ret;
+	char *__rebase_path_author_script_ret;
+	char *__rebase_path_amend_ret;
+	char *__rebase_path_stopped_sha_ret;
+	char *__rebase_path_rewritten_list_ret;
+	char *__rebase_path_rewritten_pending_ret;
+	char *__rebase_path_squash_onto_ret;
+	char *__rebase_path_refs_to_delete_ret;
+	char *__rebase_path_gpg_sign_opt_ret;
+	char *__rebase_path_cdate_is_adate_ret;
+	char *__rebase_path_ignore_date_ret;
+	char *__rebase_path_orig_head_ret;
+	char *__rebase_path_verbose_ret;
+	char *__rebase_path_quiet_ret;
+	char *__rebase_path_signoff_ret;
+	char *__rebase_path_head_name_ret;
+	char *__rebase_path_onto_ret;
+	char *__rebase_path_autostash_ret;
+	char *__rebase_path_strategy_ret;
+	char *__rebase_path_strategy_opts_ret;
+	char *__rebase_path_allow_rerere_autoupdate_ret;
+	char *__rebase_path_reschedule_failed_exec_ret;
+	char *__rebase_path_no_reschedule_failed_exec_ret;
+	char *__rebase_path_drop_redundant_commits_ret;
+	char *__rebase_path_keep_redundant_commits_ret;
+
+	struct {
+		struct strbuf __buf;			// = STRBUF_INIT;
+	} gpg_sign_opt_quoted;
+	struct {
+		struct lock_file __lock;
+	} do_merge;
+};
+static void __git_sequencer_mod_init(void *ctx)
+{
+	struct __git_sequencer_ctx_t *__git_sequencer_ctx = ctx;
+	__git_sequencer_ctx->gpg_sign_opt_quoted.__buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_sequencer,
+	sizeof(struct __git_sequencer_ctx_t),
+	GIT_MOD_SEQUENCER,
+	__git_sequencer_mod_init
+)
+#	define git_sequencer_ctx			((struct __git_sequencer_ctx_t *)vsf_git_ctx(git_sequencer))
+#	define git_path_commit_editmsg_ret	(git_sequencer_ctx->__git_path_commit_editmsg_ret)
+#	define git_path_seq_dir_ret			(git_sequencer_ctx->__git_path_seq_dir_ret)
+#	define git_path_todo_file_ret		(git_sequencer_ctx->__git_path_todo_file_ret)
+#	define git_path_opts_file_ret		(git_sequencer_ctx->__git_path_opts_file_ret)
+#	define git_path_head_file_ret		(git_sequencer_ctx->__git_path_head_file_ret)
+#	define git_path_abort_safety_file_ret	(git_sequencer_ctx->__git_path_abort_safety_file_ret)
+#	define rebase_path_ret				(git_sequencer_ctx->__rebase_path_ret)
+#	define rebase_path_todo_ret			(git_sequencer_ctx->__rebase_path_todo_ret)
+#	define rebase_path_todo_backup_ret	(git_sequencer_ctx->__rebase_path_todo_backup_ret)
+#	define rebase_path_dropped_ret		(git_sequencer_ctx->__rebase_path_dropped_ret)
+#	define rebase_path_done_ret			(git_sequencer_ctx->__rebase_path_done_ret)
+#	define rebase_path_msgnum_ret		(git_sequencer_ctx->__rebase_path_msgnum_ret)
+#	define rebase_path_msgtotal_ret		(git_sequencer_ctx->__rebase_path_msgtotal_ret)
+#	define rebase_path_message_ret		(git_sequencer_ctx->__rebase_path_message_ret)
+#	define rebase_path_squash_msg_ret	(git_sequencer_ctx->__rebase_path_squash_msg_ret)
+#	define rebase_path_fixup_msg_ret	(git_sequencer_ctx->__rebase_path_fixup_msg_ret)
+#	define rebase_path_current_fixups_ret	(git_sequencer_ctx->__rebase_path_current_fixups_ret)
+#	define rebase_path_author_script_ret	(git_sequencer_ctx->__rebase_path_author_script_ret)
+#	define rebase_path_amend_ret		(git_sequencer_ctx->__rebase_path_amend_ret)
+#	define rebase_path_stopped_sha_ret	(git_sequencer_ctx->__rebase_path_stopped_sha_ret)
+#	define rebase_path_rewritten_list_ret	(git_sequencer_ctx->__rebase_path_rewritten_list_ret)
+#	define rebase_path_rewritten_pending_ret	(git_sequencer_ctx->__rebase_path_rewritten_pending_ret)
+#	define rebase_path_squash_onto_ret	(git_sequencer_ctx->__rebase_path_squash_onto_ret)
+#	define rebase_path_refs_to_delete_ret	(git_sequencer_ctx->__rebase_path_refs_to_delete_ret)
+#	define rebase_path_gpg_sign_opt_ret	(git_sequencer_ctx->__rebase_path_gpg_sign_opt_ret)
+#	define rebase_path_cdate_is_adate_ret	(git_sequencer_ctx->__rebase_path_cdate_is_adate_ret)
+#	define rebase_path_ignore_date_ret	(git_sequencer_ctx->__rebase_path_ignore_date_ret)
+#	define rebase_path_orig_head_ret	(git_sequencer_ctx->__rebase_path_orig_head_ret)
+#	define rebase_path_verbose_ret		(git_sequencer_ctx->__rebase_path_verbose_ret)
+#	define rebase_path_quiet_ret		(git_sequencer_ctx->__rebase_path_quiet_ret)
+#	define rebase_path_signoff_ret		(git_sequencer_ctx->__rebase_path_signoff_ret)
+#	define rebase_path_head_name_ret	(git_sequencer_ctx->__rebase_path_head_name_ret)
+#	define rebase_path_onto_ret			(git_sequencer_ctx->__rebase_path_onto_ret)
+#	define rebase_path_autostash_ret	(git_sequencer_ctx->__rebase_path_autostash_ret)
+#	define rebase_path_strategy_ret		(git_sequencer_ctx->__rebase_path_strategy_ret)
+#	define rebase_path_strategy_opts_ret	(git_sequencer_ctx->__rebase_path_strategy_opts_ret)
+#	define rebase_path_allow_rerere_autoupdate_ret	(git_sequencer_ctx->__rebase_path_allow_rerere_autoupdate_ret)
+#	define rebase_path_reschedule_failed_exec_ret	(git_sequencer_ctx->__rebase_path_reschedule_failed_exec_ret)
+#	define rebase_path_no_reschedule_failed_exec_ret	(git_sequencer_ctx->__rebase_path_no_reschedule_failed_exec_ret)
+#	define rebase_path_drop_redundant_commits_ret	(git_sequencer_ctx->__rebase_path_drop_redundant_commits_ret)
+#	define rebase_path_keep_redundant_commits_ret	(git_sequencer_ctx->__rebase_path_keep_redundant_commits_ret)
+#endif
+
 GIT_PATH_FUNC(git_path_commit_editmsg, "COMMIT_EDITMSG")
 
 static GIT_PATH_FUNC(git_path_seq_dir, "sequencer")
@@ -301,12 +406,19 @@ static int has_conforming_footer(struct strbuf *sb, struct strbuf *sob,
 
 static const char *gpg_sign_opt_quoted(struct replay_opts *opts)
 {
-	static struct strbuf buf = STRBUF_INIT;
+#ifdef __VSF__
+#	define __buf				(git_sequencer_ctx->gpg_sign_opt_quoted.__buf)
+#else
+	static struct strbuf __buf = STRBUF_INIT;
+#endif
 
-	strbuf_reset(&buf);
+	strbuf_reset(&__buf);
 	if (opts->gpg_sign)
-		sq_quotef(&buf, "-S%s", opts->gpg_sign);
-	return buf.buf;
+		sq_quotef(&__buf, "-S%s", opts->gpg_sign);
+	return __buf.buf;
+#ifdef __VSF__
+#	undef __buf
+#endif
 }
 
 int sequencer_remove_state(struct replay_opts *opts)
@@ -1689,7 +1801,7 @@ static int allow_empty(struct repository *r,
 static struct {
 	char c;
 	const char *str;
-} todo_command_info[] = {
+} const todo_command_info[] = {
 	{ 'p', "pick" },
 	{ 0,   "revert" },
 	{ 'e', "edit" },
@@ -3762,7 +3874,11 @@ static int do_merge(struct repository *r,
 		NULL : opts->strategy;
 	struct merge_options o;
 	int merge_arg_len, oneline_offset, can_fast_forward, ret, k;
+#ifdef __VSF__
+#	define lock					(git_sequencer_ctx->do_merge.__lock)
+#else
 	static struct lock_file lock;
+#endif
 	const char *p;
 
 	if (repo_hold_locked_index(r, &lock, LOCK_REPORT_ON_ERROR) < 0) {
@@ -4061,6 +4177,9 @@ leave_merge:
 	rollback_lock_file(&lock);
 	free_commit_list(to_merge);
 	return ret;
+#ifdef __VSF__
+#	undef lock
+#endif
 }
 
 static int is_final_fixup(struct todo_list *todo_list)

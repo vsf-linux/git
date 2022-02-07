@@ -74,14 +74,48 @@ static int attr_hash_entry_cmp(const void *unused_cmp_data,
 	return (a->keylen != b->keylen) || strncmp(a->key, b->key, a->keylen);
 }
 
+#ifdef __VSF__
+struct __git_attr_ctx_t {
+	struct attr_hashmap __g_attr_hashmap;
+	struct check_vector {
+		size_t nr;
+		size_t alloc;
+		struct attr_check **checks;
+		pthread_mutex_t mutex;
+	} __check_vector;
+	enum git_attr_direction __direction;
+	struct {
+		const char *__system_wide;
+	} git_etc_gitattributes;
+	char *__git_path_info_attributes_ret;
+};
+static void __git_attr_mod_init(void *ctx)
+{
+	struct __git_attr_ctx_t *__git_attr_ctx = ctx;
+	__git_attr_ctx->__g_attr_hashmap = (struct attr_hashmap) {
+		HASHMAP_INIT(attr_hash_entry_cmp, NULL)
+	};
+}
+define_vsf_git_mod(git_attr,
+	sizeof(struct __git_attr_ctx_t),
+	GIT_MOD_ATTR,
+	__git_attr_mod_init
+)
+#	define git_attr_ctx				((struct __git_attr_ctx_t *)vsf_git_ctx(git_attr))
+#endif
+
 /*
  * The global dictionary of all interned attributes.  This
  * is a singleton object which is shared between threads.
  * Access to this dictionary must be surrounded with a mutex.
  */
+#ifdef __VSF__
+#	define g_attr_hashmap			(git_attr_ctx->__g_attr_hashmap)
+#else
 static struct attr_hashmap g_attr_hashmap = {
 	HASHMAP_INIT(attr_hash_entry_cmp, NULL)
 };
+#endif
 
 /*
  * Retrieve the 'value' stored in a hashmap given the provided 'key'.
@@ -483,12 +517,16 @@ static void drop_attr_stack(struct attr_stack **stack)
 }
 
 /* List of all attr_check structs; access should be surrounded by mutex */
+#ifdef __VSF__
+#	define check_vector				(git_attr_ctx->__check_vector)
+#else
 static struct check_vector {
 	size_t nr;
 	size_t alloc;
 	struct attr_check **checks;
 	pthread_mutex_t mutex;
 } check_vector;
+#endif
 
 static inline void vector_lock(void)
 {
@@ -691,7 +729,11 @@ static struct attr_stack *read_attr_from_array(const char **list)
  * direction causes a global paradigm shift, it should not ever be called while
  * another thread could potentially be calling into the attribute system.
  */
+#ifdef __VSF__
+#	define direction			(git_attr_ctx->__direction)
+#else
 static enum git_attr_direction direction;
+#endif
 
 void git_attr_set_direction(enum git_attr_direction new_direction)
 {
@@ -837,10 +879,17 @@ static void debug_set(const char *what, const char *match, struct git_attr *attr
 
 static const char *git_etc_gitattributes(void)
 {
+#ifdef __VSF__
+#	define system_wide			(git_attr_ctx->git_etc_gitattributes.__system_wide)
+#else
 	static const char *system_wide;
+#endif
 	if (!system_wide)
 		system_wide = system_path(ETC_GITATTRIBUTES);
 	return system_wide;
+#ifdef __VSF__
+#	undef system_wide
+#endif
 }
 
 static const char *get_home_gitattributes(void)
@@ -856,6 +905,9 @@ static int git_attr_system(void)
 	return !git_env_bool("GIT_ATTR_NOSYSTEM", 0);
 }
 
+#ifdef __VSF__
+#	define git_path_info_attributes_ret	(git_attr_ctx->__git_path_info_attributes_ret)
+#endif
 static GIT_PATH_FUNC(git_path_info_attributes, INFOATTRIBUTES_FILE)
 
 static void push_stack(struct attr_stack **attr_stack_p,

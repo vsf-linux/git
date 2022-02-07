@@ -45,22 +45,22 @@ struct __git_builtin_blame_ctx_t {
 	int __max_orig_digits;
 	int __max_digits;
 	int __max_score_digits;
-	int __show_root;
-	int __reverse;
+	int ____show_root;
+	int ____reverse;
 	int __blank_boundary;
 	int __incremental;
-	int __xdl_opts;
-	int __abbrev;								// = -1;
-	int __no_whole_file_rename;
+	int ____xdl_opts;
+	int __abbrev;									// = -1;
+	int ____no_whole_file_rename;
 	int __show_progress;
 	char __repeated_meta_color[COLOR_MAXLEN];
 	int __coloring_mode;
-	struct string_list __ignore_revs_file_list;	// = STRING_LIST_INIT_NODUP;
+	struct string_list ____ignore_revs_file_list;	// = STRING_LIST_INIT_NODUP;
 	int __mark_unblamable_lines;
 	int __mark_ignored_lines;
-	struct date_mode __blame_date_mode;			// = { DATE_ISO8601 };
+	struct date_mode __blame_date_mode;				// = { DATE_ISO8601 };
 	size_t __blame_date_width;
-	struct string_list __mailmap;				// = STRING_LIST_INIT_NODUP;
+	struct string_list __mailmap;					// = STRING_LIST_INIT_NODUP;
 	unsigned __blame_move_score;
 	unsigned __blame_copy_score;
 
@@ -77,7 +77,7 @@ static void __git_builtin_blame_mod_init(void *ctx)
 {
 	struct __git_builtin_blame_ctx_t *__git_builtin_blame_ctx = ctx;
 	__git_builtin_blame_ctx->__abbrev = -1;
-	__git_builtin_blame_ctx->__ignore_revs_file_list = STRING_LIST_INIT_NODUP;
+	__git_builtin_blame_ctx->____ignore_revs_file_list = STRING_LIST_INIT_NODUP;
 	__git_builtin_blame_ctx->__blame_date_mode = (struct date_mode){ DATE_ISO8601 };
 	__git_builtin_blame_ctx->__mailmap = STRING_LIST_INIT_NODUP;
 	__git_builtin_blame_ctx->format_time.__time_buf = STRBUF_INIT;
@@ -93,17 +93,17 @@ define_vsf_git_mod(git_builtin_blame,
 #	define max_orig_digits			(git_builtin_blame_ctx->__max_orig_digits)
 #	define max_digits				(git_builtin_blame_ctx->__max_digits)
 #	define max_score_digits			(git_builtin_blame_ctx->__max_score_digits)
-#	define __show_root				(git_builtin_blame_ctx->__show_root)
-#	define __reverse				(git_builtin_blame_ctx->__reverse)
+#	define __show_root				(git_builtin_blame_ctx->____show_root)
+#	define __reverse				(git_builtin_blame_ctx->____reverse)
 #	define blank_boundary			(git_builtin_blame_ctx->__blank_boundary)
 #	define incremental				(git_builtin_blame_ctx->__incremental)
-#	define __xdl_opts				(git_builtin_blame_ctx->__xdl_opts)
+#	define __xdl_opts				(git_builtin_blame_ctx->____xdl_opts)
 #	define abbrev					(git_builtin_blame_ctx->__abbrev)
-#	define __no_whole_file_rename	(git_builtin_blame_ctx->__no_whole_file_rename)
+#	define __no_whole_file_rename	(git_builtin_blame_ctx->____no_whole_file_rename)
 #	define show_progress			(git_builtin_blame_ctx->__show_progress)
 #	define repeated_meta_color		(git_builtin_blame_ctx->__repeated_meta_color)
 #	define coloring_mode			(git_builtin_blame_ctx->__coloring_mode)
-#	define __ignore_revs_file_list	(git_builtin_blame_ctx->__ignore_revs_file_list)
+#	define __ignore_revs_file_list	(git_builtin_blame_ctx->____ignore_revs_file_list)
 #	define mark_unblamable_lines	(git_builtin_blame_ctx->__mark_unblamable_lines)
 #	define mark_ignored_lines		(git_builtin_blame_ctx->__mark_ignored_lines)
 #	define blame_date_mode			(git_builtin_blame_ctx->__blame_date_mode)

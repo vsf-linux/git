@@ -40,6 +40,34 @@ static char const * const builtin_rebase_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_rebase_ctx_t {
+	char *__path_squash_onto_ret;
+	char *__path_interactive_ret;
+	char *__apply_dir_ret;
+	char *__merge_dir_ret;
+	struct {
+		struct strbuf __path;			// = STRBUF_INIT;
+		size_t __prefix_len;
+	} state_dir_path;
+};
+static void __git_rebase_mod_init(void *ctx)
+{
+	struct __git_rebase_ctx_t *__git_rebase_ctx = ctx;
+	__git_rebase_ctx->state_dir_path.__path = STRBUF_INIT;
+}
+define_vsf_git_mod(git_rebase,
+	sizeof(struct __git_rebase_ctx_t),
+	GIT_MOD_REBASE,
+	__git_rebase_mod_init
+)
+#	define git_rebase_ctx				((struct __git_rebase_ctx_t *)vsf_git_ctx(git_rebase))
+#	define path_squash_onto_ret			(git_rebase_ctx->__path_squash_onto_ret)
+#	define path_interactive_ret			(git_rebase_ctx->__path_interactive_ret)
+#	define apply_dir_ret				(git_rebase_ctx->__apply_dir_ret)
+#	define merge_dir_ret				(git_rebase_ctx->__merge_dir_ret)
+#endif
+
 static GIT_PATH_FUNC(path_squash_onto, "rebase-merge/squash-onto")
 static GIT_PATH_FUNC(path_interactive, "rebase-merge/interactive")
 static GIT_PATH_FUNC(apply_dir, "rebase-apply")
@@ -400,8 +428,13 @@ static void imply_merge(struct rebase_options *opts, const char *option)
 /* Returns the filename prefixed by the state_dir */
 static const char *state_dir_path(const char *filename, struct rebase_options *opts)
 {
+#ifdef __VSF__
+#	define path					(git_rebase_ctx->state_dir_path.__path)
+#	define prefix_len			(git_rebase_ctx->state_dir_path.__prefix_len)
+#else
 	static struct strbuf path = STRBUF_INIT;
 	static size_t prefix_len;
+#endif
 
 	if (!prefix_len) {
 		strbuf_addf(&path, "%s/", opts->state_dir);
@@ -411,6 +444,10 @@ static const char *state_dir_path(const char *filename, struct rebase_options *o
 	strbuf_setlen(&path, prefix_len);
 	strbuf_addstr(&path, filename);
 	return path.buf;
+#ifdef __VSF__
+#	undef path
+#	undef prefix_len
+#endif
 }
 
 /* Initialize the rebase options from the state directory. */

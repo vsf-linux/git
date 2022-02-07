@@ -36,11 +36,21 @@ static const char * const builtin_branch_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+#	define git_branch_ctx			((struct __git_branch_ctx_t *)vsf_git_ctx(git_branch))
+#	define head						(git_branch_ctx->__head)
+#	define head_oid					(git_branch_ctx->__head_oid)
+#	define branch_use_color			(git_branch_ctx->__branch_use_color)
+#	define branch_colors			(git_branch_ctx->__branch_colors)
+
+const char __branch_colors[][COLOR_MAXLEN] = {
+#else
 static const char *head;
 static struct object_id head_oid;
 
 static int branch_use_color = -1;
 static char branch_colors[][COLOR_MAXLEN] = {
+#endif
 	GIT_COLOR_RESET,
 	GIT_COLOR_NORMAL,       /* PLAIN */
 	GIT_COLOR_RED,          /* REMOTE */
@@ -69,10 +79,48 @@ static const char *color_branch_slots[] = {
 	[BRANCH_COLOR_WORKTREE] = "worktree",
 };
 
-static struct string_list output = STRING_LIST_INIT_DUP;
+#ifdef __VSF__
+#	define git_branch_ctx			((struct __git_branch_ctx_t *)vsf_git_ctx(git_branch))
+#	define __output					(git_branch_ctx->____output)
+#	define colopts					(git_branch_ctx->__colopts)
+#else
+static struct string_list __output = STRING_LIST_INIT_DUP;
 static unsigned int colopts;
+#endif
 
 define_list_config_array(color_branch_slots);
+
+#ifdef __VSF__
+struct __git_branch_ctx_t {
+	const char *__head;
+	struct object_id __head_oid;
+	int __branch_use_color;					// = -1;
+	char __branch_colors[7][COLOR_MAXLEN];
+	struct string_list ____output;			// = STRING_LIST_INIT_DUP;
+	unsigned int __colopts;
+	char *__edit_description_ret;
+	struct {
+		struct strbuf __buf;				// = STRBUF_INIT;
+	} quote_literal_for_format;
+	struct {
+		struct ref_sorting *__sorting;
+	} cmd_branch;
+};
+static void __git_branch_mod_init(void *ctx)
+{
+	struct __git_branch_ctx_t *__git_branch_ctx = ctx;
+	VSF_LINUX_ASSERT(dimof(__branch_colors) <= dimof(__git_branch_ctx->__branch_colors));
+	memcpy(__git_branch_ctx->__branch_colors, __branch_colors, sizeof(__branch_colors));
+	__git_branch_ctx->__branch_use_color = -1;
+	__git_branch_ctx->____output = STRING_LIST_INIT_DUP;
+	__git_branch_ctx->quote_literal_for_format.__buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_branch,
+	sizeof(struct __git_branch_ctx_t),
+	GIT_MOD_BRANCH,
+	__git_branch_mod_init
+)
+#endif
 
 static int git_branch_config(const char *var, const char *value, void *cb)
 {
@@ -335,21 +383,28 @@ static int calc_maxwidth(struct ref_array *refs, int remote_bonus)
 
 static const char *quote_literal_for_format(const char *s)
 {
-	static struct strbuf buf = STRBUF_INIT;
+#ifdef __VSF__
+#	define __buf				(git_branch_ctx->quote_literal_for_format.__buf)
+#else
+	static struct strbuf __buf = STRBUF_INIT;
+#endif
 
-	strbuf_reset(&buf);
+	strbuf_reset(&__buf);
 	while (*s) {
 		const char *ep = strchrnul(s, '%');
 		if (s < ep)
-			strbuf_add(&buf, s, ep - s);
+			strbuf_add(&__buf, s, ep - s);
 		if (*ep == '%') {
-			strbuf_addstr(&buf, "%%");
+			strbuf_addstr(&__buf, "%%");
 			s = ep + 1;
 		} else {
 			s = ep;
 		}
 	}
-	return buf.buf;
+	return __buf.buf;
+#ifdef __VSF__
+#	undef __buf
+#endif
 }
 
 static char *build_format(struct ref_filter *filter, int maxwidth, const char *remote_prefix)
@@ -588,6 +643,9 @@ static void copy_or_rename_branch(const char *oldname, const char *newname, int 
 	strbuf_release(&newsection);
 }
 
+#ifdef __VSF__
+#	define edit_description_ret	(git_branch_ctx->__edit_description_ret)
+#endif
 static GIT_PATH_FUNC(edit_description, "EDIT_DESCRIPTION")
 
 static int edit_branch_description(const char *branch_name)
@@ -629,7 +687,11 @@ int cmd_branch(int argc, const char **argv, const char *prefix)
 	enum branch_track track;
 	struct ref_filter filter;
 	int icase = 0;
+#ifdef __VSF__
+#	define sorting				(git_branch_ctx->cmd_branch.__sorting)
+#else
 	static struct ref_sorting *sorting;
+#endif
 	struct string_list sorting_options = STRING_LIST_INIT_DUP;
 	struct ref_format format = REF_FORMAT_INIT;
 
@@ -760,9 +822,9 @@ int cmd_branch(int argc, const char **argv, const char *prefix)
 		ref_sorting_set_sort_flags_all(sorting, REF_SORTING_ICASE, icase);
 		ref_sorting_set_sort_flags_all(
 			sorting, REF_SORTING_DETACHED_HEAD_FIRST, 1);
-		print_ref_list(&filter, sorting, &format, &output);
-		print_columns(&output, colopts, NULL);
-		string_list_clear(&output, 0);
+		print_ref_list(&filter, sorting, &format, &__output);
+		print_columns(&__output, colopts, NULL);
+		string_list_clear(&__output, 0);
 		ref_sorting_release(sorting);
 		return 0;
 	} else if (edit_description) {
@@ -873,4 +935,7 @@ int cmd_branch(int argc, const char **argv, const char *prefix)
 		usage_with_options(builtin_branch_usage, options);
 
 	return 0;
+#ifdef __VSF__
+#	undef sorting
+#endif
 }

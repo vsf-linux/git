@@ -47,6 +47,34 @@ struct cached_dir {
 	struct untracked_cache_dir *ucd;
 };
 
+#ifdef __VSF__
+struct __git_dir_ctx_t {
+	struct {
+		struct strbuf __sb;				// = STRBUF_INIT;
+	} get_ident_string;
+	struct {
+		int __untracked_cache_disabled;	// = -1;
+	} validate_untracked_cache;
+	struct {
+		int __force_untracked_cache;	// = -1;
+	} read_directory;
+	char *__git_path_info_exclude_ret;
+};
+static void __git_dir_mod_init(void *ctx)
+{
+	struct __git_dir_ctx_t *__git_dir_ctx = ctx;
+	__git_dir_ctx->get_ident_string.__sb = STRBUF_INIT;
+	__git_dir_ctx->validate_untracked_cache.__untracked_cache_disabled = -1;
+	__git_dir_ctx->read_directory.__force_untracked_cache = -1;
+}
+define_vsf_git_mod(git_dir,
+	sizeof(struct __git_dir_ctx_t),
+	GIT_MOD_DIR,
+	__git_dir_mod_init
+)
+#	define git_dir_ctx					((struct __git_dir_ctx_t *)vsf_git_ctx(git_dir))
+#endif
+
 static enum path_treatment read_directory_recursive(struct dir_struct *dir,
 	struct index_state *istate, const char *path, int len,
 	struct untracked_cache_dir *untracked,
@@ -2711,7 +2739,11 @@ static int treat_leading_path(struct dir_struct *dir,
 
 static const char *get_ident_string(void)
 {
+#ifdef __VSF__
+#	define sb					(git_dir_ctx->get_ident_string.__sb)
+#else
 	static struct strbuf sb = STRBUF_INIT;
+#endif
 	struct utsname uts;
 
 	if (sb.len)
@@ -2721,6 +2753,9 @@ static const char *get_ident_string(void)
 	strbuf_addf(&sb, "Location %s, system %s", get_git_work_tree(),
 		    uts.sysname);
 	return sb.buf;
+#ifdef __VSF__
+#	undef sb
+#endif
 }
 
 static int ident_in_untracked(const struct untracked_cache *uc)
@@ -2784,7 +2819,11 @@ static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *d
 						      const struct pathspec *pathspec)
 {
 	struct untracked_cache_dir *root;
+#ifdef __VSF__
+#	define untracked_cache_disabled	(git_dir_ctx->validate_untracked_cache.__untracked_cache_disabled)
+#else
 	static int untracked_cache_disabled = -1;
+#endif
 
 	if (!dir->untracked)
 		return NULL;
@@ -2792,6 +2831,10 @@ static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *d
 		untracked_cache_disabled = git_env_bool("GIT_DISABLE_UNTRACKED_CACHE", 0);
 	if (untracked_cache_disabled)
 		return NULL;
+
+#ifdef __VSF__
+#	undef untracked_cache_disabled
+#endif
 
 	/*
 	 * We only support $GIT_DIR/info/exclude and core.excludesfile
@@ -2932,7 +2975,11 @@ int read_directory(struct dir_struct *dir, struct index_state *istate,
 
 	trace2_region_leave("dir", "read_directory", istate->repo);
 	if (dir->untracked) {
+#ifdef __VSF__
+#	define force_untracked_cache	(git_dir_ctx->read_directory.__force_untracked_cache)
+#else
 		static int force_untracked_cache = -1;
+#endif
 
 		if (force_untracked_cache < 0)
 			force_untracked_cache =
@@ -2946,6 +2993,9 @@ int read_directory(struct dir_struct *dir, struct index_state *istate,
 		if (dir->untracked != istate->untracked) {
 			FREE_AND_NULL(dir->untracked);
 		}
+#ifdef __VSF__
+#	undef force_untracked_cache
+#endif
 	}
 
 	return dir->nr;
@@ -3235,6 +3285,9 @@ int remove_dir_recursively(struct strbuf *path, int flag)
 	return remove_dir_recurse(path, flag, NULL);
 }
 
+#ifdef __VSF__
+#	define git_path_info_exclude_ret	(git_dir_ctx->__git_path_info_exclude_ret)
+#endif
 static GIT_PATH_FUNC(git_path_info_exclude, "info/exclude")
 
 void setup_standard_excludes(struct dir_struct *dir)

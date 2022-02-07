@@ -16,6 +16,44 @@
 #define RESOLVED 0
 #define PUNTED 1
 #define THREE_STAGED 2
+
+#ifdef __VSF__
+static void __git_rerere_public_mod_init(void *ctx)
+{
+	struct __git_rerere_public_ctx_t *__git_rerere_ctx = ctx;
+	__git_rerere_ctx->__RERERE_RESOLVED = &__git_rerere_ctx->__RERERE_RESOLVED;
+}
+define_vsf_git_mod(git_rerere_public,
+	sizeof(struct __git_rerere_public_ctx_t),
+	GIT_MOD_RERERE_PUBLIC,
+	__git_rerere_public_mod_init
+)
+
+struct __git_rerere_ctx_t {
+	int __rerere_enabled;				// = -1;
+	int __rerere_autoupdate;
+	struct strmap __rerere_dirs;		// = STRMAP_INIT;
+	struct lock_file __write_lock;
+	char *__git_path_rr_cache_ret;
+};
+static void __git_rerere_mod_init(void *ctx)
+{
+	struct __git_rerere_ctx_t *__git_rerere_ctx = ctx;
+	__git_rerere_ctx->__rerere_enabled = -1;
+	__git_rerere_ctx->__rerere_dirs = STRMAP_INIT;
+}
+define_vsf_git_mod(git_rerere,
+	sizeof(struct __git_rerere_ctx_t),
+	GIT_MOD_RERERE,
+	__git_rerere_mod_init
+)
+
+#	define git_rerere_ctx				((struct __git_rerere_ctx_t *)vsf_git_ctx(git_rerere))
+#	define rerere_enabled				(git_rerere_ctx->__rerere_enabled)
+#	define rerere_autoupdate			(git_rerere_ctx->__rerere_autoupdate)
+#	define rerere_dirs					(git_rerere_ctx->__rerere_dirs)
+#else
+
 void *RERERE_RESOLVED = &RERERE_RESOLVED;
 
 /* if rerere_enabled == -1, fall back to detection of .git/rr-cache */
@@ -23,6 +61,7 @@ static int rerere_enabled = -1;
 
 /* automatically update cleanly resolved paths to the index */
 static int rerere_autoupdate;
+#endif
 
 #define RR_HAS_POSTIMAGE 1
 #define RR_HAS_PREIMAGE 2
@@ -31,8 +70,9 @@ struct rerere_dir {
 	unsigned char *status;
 	char name[FLEX_ARRAY];
 };
-
+#ifndef __VSF__
 static struct strmap rerere_dirs = STRMAP_INIT;
+#endif
 
 static void free_rerere_dirs(void)
 {
@@ -220,7 +260,11 @@ static void read_rr(struct repository *r, struct string_list *rr)
 	fclose(in);
 }
 
+#ifdef __VSF__
+#	define write_lock				(git_rerere_ctx->__write_lock)
+#else
 static struct lock_file write_lock;
+#endif
 
 static int write_rr(struct string_list *rr, int out_fd)
 {
@@ -848,6 +892,9 @@ static void git_rerere_config(void)
 	git_config(git_default_config, NULL);
 }
 
+#ifdef __VSF__
+#	define git_path_rr_cache_ret	(git_rerere_ctx->__git_path_rr_cache_ret)
+#endif
 static GIT_PATH_FUNC(git_path_rr_cache, "rr-cache")
 
 static int is_rerere_enabled(void)

@@ -22,7 +22,7 @@ int cmp_strmap_entry(const void *hashmap_cmp_fn_data,
 		     const struct hashmap_entry *entry2,
 		     const void *keydata);
 
-#define STRMAP_INIT { \
+#define STRMAP_INIT (struct strmap){ \
 			.map = HASHMAP_INIT(cmp_strmap_entry, NULL),  \
 			.strdup_strings = 1,                          \
 		    }

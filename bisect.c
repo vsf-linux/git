@@ -17,6 +17,15 @@
 #include "object-store.h"
 #include "dir.h"
 
+#ifdef __VSF__
+#	define git_bisect_ctx			((struct __git_bisect_ctx_t *)vsf_git_ctx(git_bisect))
+#	define good_revs				(git_bisect_ctx->__good_revs)
+#	define skipped_revs				(git_bisect_ctx->__skipped_revs)
+#	define current_bad_oid			(git_bisect_ctx->__current_bad_oid)
+#	define argv_checkout			(git_bisect_ctx->__argv_checkout)
+#	define term_bad					(git_bisect_ctx->__term_bad)
+#	define term_good				(git_bisect_ctx->__term_good)
+#else
 static struct oid_array good_revs;
 static struct oid_array skipped_revs;
 
@@ -26,6 +35,7 @@ static const char *argv_checkout[] = {"checkout", "-q", NULL, "--", NULL};
 
 static const char *term_bad;
 static const char *term_good;
+#endif
 
 /* Remember to update object flag allocation in object.h */
 #define COUNTED		(1u<<16)
@@ -74,7 +84,42 @@ static void clear_distance(struct commit_list *list)
 }
 
 define_commit_slab(commit_weight, int *);
+
+#ifdef __VSF__
+struct __git_bisect_ctx_t {
+	struct oid_array __good_revs;
+	struct oid_array __skipped_revs;
+	struct object_id *__current_bad_oid;
+	const char *__argv_checkout[5];
+	const char *__term_bad;
+	const char *__term_good;
+	struct commit_weight __commit_weight;
+	char *__git_path_bisect_names_ret;
+	char *__git_path_bisect_expected_rev_ret;
+	char *__git_path_bisect_ancestors_ok_ret;
+	char *__git_path_bisect_run_ret;
+	char *__git_path_bisect_start_ret;
+	char *__git_path_bisect_log_ret;
+	char *__git_path_bisect_terms_ret;
+	char *__git_path_bisect_first_parent_ret;
+	char *__git_path_head_name_ret;
+};
+static void __git_bisect_mod_init(void *ctx)
+{
+	struct __git_bisect_ctx_t *__git_bisect_ctx = ctx;
+	const char *__argv_checkout[] = {"checkout", "-q", NULL, "--", NULL};
+	VSF_LINUX_ASSERT(dimof(__argv_checkout) <= dimof(__git_bisect_ctx->__argv_checkout));
+	memcpy(__git_bisect_ctx->__argv_checkout, __argv_checkout, sizeof(__argv_checkout));
+}
+define_vsf_git_mod(git_bisect,
+	sizeof(struct __git_bisect_ctx_t),
+	GIT_MOD_BISECT,
+	__git_bisect_mod_init
+)
+#	define commit_weight			(git_bisect_ctx->__commit_weight)
+#else
 static struct commit_weight commit_weight;
+#endif
 
 #define DEBUG_BISECT 0
 
@@ -466,6 +511,17 @@ static int read_bisect_refs(void)
 	return for_each_ref_in("refs/bisect/", register_ref, NULL);
 }
 
+#ifdef __VSF__
+#	define git_path_bisect_names_ret		(git_bisect_ctx->__git_path_bisect_names_ret)
+#	define git_path_bisect_expected_rev_ret	(git_bisect_ctx->__git_path_bisect_expected_rev_ret)
+#	define git_path_bisect_ancestors_ok_ret	(git_bisect_ctx->__git_path_bisect_ancestors_ok_ret)
+#	define git_path_bisect_run_ret			(git_bisect_ctx->__git_path_bisect_run_ret)
+#	define git_path_bisect_start_ret		(git_bisect_ctx->__git_path_bisect_start_ret)
+#	define git_path_bisect_log_ret			(git_bisect_ctx->__git_path_bisect_log_ret)
+#	define git_path_bisect_terms_ret		(git_bisect_ctx->__git_path_bisect_terms_ret)
+#	define git_path_bisect_first_parent_ret	(git_bisect_ctx->__git_path_bisect_first_parent_ret)
+#	define git_path_head_name_ret			(git_bisect_ctx->__git_path_head_name_ret)
+#endif
 static GIT_PATH_FUNC(git_path_bisect_names, "BISECT_NAMES")
 static GIT_PATH_FUNC(git_path_bisect_expected_rev, "BISECT_EXPECTED_REV")
 static GIT_PATH_FUNC(git_path_bisect_ancestors_ok, "BISECT_ANCESTORS_OK")

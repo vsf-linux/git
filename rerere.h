@@ -15,7 +15,16 @@ struct repository;
  * index. Set in the util field of such paths after calling
  * rerere_remaining.
  */
+#ifdef __VSF__
+struct __git_rerere_public_ctx_t {
+	void *__RERERE_RESOLVED;
+};
+declare_vsf_git_mod(git_rerere_public)
+#	define git_rerere_public_ctx		((struct __git_rerere_public_ctx_t *)vsf_git_ctx(git_rerere_public))
+#	define RERERE_RESOLVED				(git_rerere_public_ctx->__RERERE_RESOLVED)
+#else
 extern void *RERERE_RESOLVED;
+#endif
 
 struct rerere_dir;
 struct rerere_id {
