@@ -16,15 +16,34 @@ struct strbuf;
 #define CONV_EOL_KEEP_CRLF    (1<<3) /* Keep CRLF line endings as is */
 #define CONV_WRITE_OBJECT     (1<<4) /* Content is written to the index */
 
-extern int global_conv_flags_eol;
+#ifdef __VSF__
+struct __git_environment_convert_public_ctx_t {
+	int __global_conv_flags_eol;
+	enum eol __core_eol;
+	char *__check_roundtrip_encoding;
+	enum auto_crlf_t __auto_crlf;
+};
+declare_vsf_git_mod(git_environment_convert_public)
+#	define git_environment_convert_public_ctx	((struct __git_environment_convert_public_ctx_t *)vsf_git_ctx(git_environment_convert_public))
+#	define global_conv_flags_eol				(git_environment_convert_public_ctx->__global_conv_flags_eol)
+#	define core_eol								(git_environment_convert_public_ctx->__core_eol)
+#	define check_roundtrip_encoding				(git_environment_convert_public_ctx->__check_roundtrip_encoding)
+#	define auto_crlf							(git_environment_convert_public_ctx->__auto_crlf)
+#endif
 
-enum auto_crlf {
+#ifndef __VSF__
+extern int global_conv_flags_eol;
+#endif
+
+enum auto_crlf_t {
 	AUTO_CRLF_FALSE = 0,
 	AUTO_CRLF_TRUE = 1,
 	AUTO_CRLF_INPUT = -1
 };
 
-extern enum auto_crlf auto_crlf;
+#ifndef __VSF__
+extern enum auto_crlf_t auto_crlf;
+#endif
 
 enum eol {
 	EOL_UNSET,
@@ -87,8 +106,10 @@ struct conv_attrs {
 void convert_attrs(struct index_state *istate,
 		   struct conv_attrs *ca, const char *path);
 
+#ifndef __VSF__
 extern enum eol core_eol;
 extern char *check_roundtrip_encoding;
+#endif
 const char *get_cached_convert_stats_ascii(struct index_state *istate,
 					   const char *path);
 const char *get_wt_convert_stats_ascii(const char *path);

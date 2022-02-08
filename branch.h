@@ -14,7 +14,16 @@ enum branch_track {
 	BRANCH_TRACK_INHERIT,
 };
 
+#ifdef __VSF__
+struct __git_environment_branch_public_ctx_t {
+	enum branch_track __git_branch_track;
+};
+declare_vsf_git_mod(git_environment_branch_public)
+#	define git_environment_branch_public_ctx	((struct __git_environment_branch_public_ctx_t *)vsf_git_ctx(git_environment_branch_public))
+#	define git_branch_track						(git_environment_branch_public_ctx->__git_branch_track)
+#else
 extern enum branch_track git_branch_track;
+#endif
 
 /* Functions for acting on the information about branches. */
 

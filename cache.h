@@ -279,6 +279,11 @@ struct __git_environment_public_ctx_t {
 	char *__git_work_tree_cfg;
 	const char *__git_commit_encoding;
 	const char *__git_log_output_encoding;
+	int __pager_use_color;
+	const char *__editor_program;
+	const char *__askpass_program;
+	const char *__excludes_file;
+	unsigned __whitespace_rule_cfg;
 };
 declare_vsf_git_mod(git_environment_public)
 #	define git_environment_public_ctx	((struct __git_environment_public_ctx_t *)vsf_git_ctx(git_environment_public))
@@ -329,6 +334,11 @@ declare_vsf_git_mod(git_environment_public)
 #	define git_work_tree_cfg			(git_environment_public_ctx->__git_work_tree_cfg)
 #	define git_commit_encoding			(git_environment_public_ctx->__git_commit_encoding)
 #	define git_log_output_encoding		(git_environment_public_ctx->__git_log_output_encoding)
+#	define pager_use_color				(git_environment_public_ctx->__pager_use_color)
+#	define editor_program				(git_environment_public_ctx->__editor_program)
+#	define askpass_program				(git_environment_public_ctx->__askpass_program)
+#	define excludes_file				(git_environment_public_ctx->__excludes_file)
+#	define whitespace_rule_cfg			(git_environment_public_ctx->__whitespace_rule_cfg)
 #endif
 
 /*
@@ -1956,16 +1966,20 @@ void write_file(const char *path, const char *fmt, ...);
 /* pager.c */
 void setup_pager(void);
 int pager_in_use(void);
+#ifndef __VSF__
 extern int pager_use_color;
+#endif
 int term_columns(void);
 void term_clear_line(void);
 int decimal_width(uintmax_t);
 int check_pager_config(const char *cmd);
 void prepare_pager_args(struct child_process *, const char *pager);
 
+#ifndef __VSF__
 extern const char *editor_program;
 extern const char *askpass_program;
 extern const char *excludes_file;
+#endif
 
 /* base85 */
 int decode_85(char *dst, const char *line, int linelen);
@@ -2004,7 +2018,9 @@ void shift_tree_by(struct repository *, const struct object_id *, const struct o
 #define WS_TAB_WIDTH_MASK        077
 /* All WS_* -- when extended, adapt diff.c emit_symbol */
 #define WS_RULE_MASK           07777
+#ifndef __VSF__
 extern unsigned whitespace_rule_cfg;
+#endif
 unsigned whitespace_rule(struct index_state *, const char *);
 unsigned parse_whitespace_rule(const char *);
 unsigned ws_check(const char *line, int len, unsigned ws_rule);
