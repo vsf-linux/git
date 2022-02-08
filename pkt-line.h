@@ -224,7 +224,16 @@ enum packet_read_status packet_reader_peek(struct packet_reader *reader);
 #define DEFAULT_PACKET_MAX 1000
 #define LARGE_PACKET_MAX 65520
 #define LARGE_PACKET_DATA_MAX (LARGE_PACKET_MAX - 4)
+#ifdef __VSF__
+struct __git_pkt_line_public_ctx_t {
+	char __packet_buffer[LARGE_PACKET_MAX];
+};
+declare_vsf_git_mod(git_pkt_line_public)
+#	define git_pkt_line_public_ctx	((struct __git_pkt_line_public_ctx_t *)vsf_git_ctx(git_pkt_line_public))
+#	define packet_buffer			(git_pkt_line_public_ctx->__packet_buffer)
+#else
 extern char packet_buffer[LARGE_PACKET_MAX];
+#endif
 
 struct packet_writer {
 	int dest_fd;

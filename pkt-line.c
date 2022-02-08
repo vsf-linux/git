@@ -2,10 +2,51 @@
 #include "pkt-line.h"
 #include "run-command.h"
 
+#ifdef __VSF__
+define_vsf_git_mod(git_pkt_line_public,
+	sizeof(struct __git_pkt_line_public_ctx_t),
+	GIT_MOD_PKT_LINE_PUBLIC,
+	NULL
+)
+
+struct __git_pkt_line_ctx_t {
+	const char *__packet_trace_prefix;	// = "git";
+	struct trace_key __trace_packet;	// = TRACE_KEY_INIT(PACKET);
+	struct trace_key __trace_pack;		// = TRACE_KEY_INIT(PACKFILE);
+	struct {
+		int __in_pack, __sideband;
+	} packet_trace;
+	struct {
+		struct strbuf __buf;			// = STRBUF_INIT;
+	} packet_write_fmt_1;
+	struct {
+		struct strbuf __buf;			// = STRBUF_INIT;
+	} packet_fwrite_fmt;
+};
+static void __git_pkt_line_mod_init(void *ctx)
+{
+	struct __git_pkt_line_ctx_t *__git_pkt_line_ctx = ctx;
+	__git_pkt_line_ctx->__packet_trace_prefix = "git";
+	__git_pkt_line_ctx->__trace_packet = TRACE_KEY_INIT(PACKET);
+	__git_pkt_line_ctx->__trace_pack = TRACE_KEY_INIT(PACKFILE);
+	__git_pkt_line_ctx->packet_write_fmt_1.__buf = STRBUF_INIT;
+	__git_pkt_line_ctx->packet_fwrite_fmt.__buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_pkt_line,
+	sizeof(struct __git_pkt_line_ctx_t),
+	GIT_MOD_PKT_LINE,
+	__git_pkt_line_mod_init
+)
+#	define git_pkt_line_ctx			((struct __git_pkt_line_ctx_t *)vsf_git_ctx(git_pkt_line))
+#	define packet_trace_prefix		(git_pkt_line_ctx->__packet_trace_prefix)
+#	define trace_packet				(git_pkt_line_ctx->__trace_packet)
+#	define trace_pack				(git_pkt_line_ctx->__trace_pack)
+#else
 char packet_buffer[LARGE_PACKET_MAX];
 static const char *packet_trace_prefix = "git";
 static struct trace_key trace_packet = TRACE_KEY_INIT(PACKET);
 static struct trace_key trace_pack = TRACE_KEY_INIT(PACKFILE);
+#endif
 
 void packet_trace_identity(const char *prog)
 {
@@ -35,7 +76,12 @@ static void packet_trace(const char *buf, unsigned int len, int write)
 {
 	int i;
 	struct strbuf out;
+#ifdef __VSF__
+#	define in_pack					(git_pkt_line_ctx->packet_trace.__in_pack)
+#	define sideband					(git_pkt_line_ctx->packet_trace.__sideband)
+#else
 	static int in_pack, sideband;
+#endif
 
 	if (!trace_want(&trace_packet) && !trace_want(&trace_pack))
 		return;
@@ -79,6 +125,10 @@ static void packet_trace(const char *buf, unsigned int len, int write)
 	strbuf_addch(&out, '\n');
 	trace_strbuf(&trace_packet, &out);
 	strbuf_release(&out);
+#ifdef __VSF__
+#	undef in_pack
+#	undef sideband
+#endif
 }
 
 /*
@@ -128,7 +178,7 @@ void packet_buf_delim(struct strbuf *buf)
 
 void set_packet_header(char *buf, int size)
 {
-	static char hexchar[] = "0123456789abcdef";
+	static const char hexchar[] = "0123456789abcdef";
 
 	#define hex(a) (hexchar[(a) & 15])
 	buf[0] = hex(size >> 12);
@@ -159,11 +209,15 @@ static void format_packet(struct strbuf *out, const char *prefix,
 static int packet_write_fmt_1(int fd, int gently, const char *prefix,
 			      const char *fmt, va_list args)
 {
-	static struct strbuf buf = STRBUF_INIT;
+#ifdef __VSF__
+#	define __buf					(git_pkt_line_ctx->packet_write_fmt_1.__buf)
+#else
+	static struct strbuf __buf = STRBUF_INIT;
+#endif
 
-	strbuf_reset(&buf);
-	format_packet(&buf, prefix, fmt, args);
-	if (write_in_full(fd, buf.buf, buf.len) < 0) {
+	strbuf_reset(&__buf);
+	format_packet(&__buf, prefix, fmt, args);
+	if (write_in_full(fd, __buf.buf, __buf.len) < 0) {
 		if (!gently) {
 			check_pipe(errno);
 			die_errno(_("packet write with format failed"));
@@ -172,6 +226,9 @@ static int packet_write_fmt_1(int fd, int gently, const char *prefix,
 	}
 
 	return 0;
+#ifdef __VSF__
+#	undef __buf
+#endif
 }
 
 void packet_write_fmt(int fd, const char *fmt, ...)
@@ -261,16 +318,23 @@ void packet_fwrite(FILE *f, const char *buf, size_t size)
 
 void packet_fwrite_fmt(FILE *fh, const char *fmt, ...)
 {
-       static struct strbuf buf = STRBUF_INIT;
+#ifdef __VSF__
+#	define __buf					(git_pkt_line_ctx->packet_fwrite_fmt.__buf)
+#else
+       static struct strbuf __buf = STRBUF_INIT;
+#endif
        va_list args;
 
-       strbuf_reset(&buf);
+       strbuf_reset(&__buf);
 
        va_start(args, fmt);
-       format_packet(&buf, "", fmt, args);
+       format_packet(&__buf, "", fmt, args);
        va_end(args);
 
-       fwrite_or_die(fh, buf.buf, buf.len);
+       fwrite_or_die(fh, __buf.buf, __buf.len);
+#ifdef __VSF__
+#	undef __buf
+#endif
 }
 
 void packet_fflush(FILE *f)

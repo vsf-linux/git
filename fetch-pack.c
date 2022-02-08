@@ -27,6 +27,76 @@
 #include "commit-graph.h"
 #include "sigchain.h"
 
+#ifdef __VSF__
+struct __git_fetch_pack_ctx_t {
+	int __transfer_unpack_limit;	// = -1;
+	int __fetch_unpack_limit;		// = -1;
+	int __unpack_limit;				// = 100;
+	int __prefer_ofs_delta;			// = 1;
+	int __no_done;
+	int __deepen_since_ok;
+	int __deepen_not_ok;
+	int __fetch_fsck_objects;		// = -1;
+	int __transfer_fsck_objects;	// = -1;
+	int __agent_supported;
+	int __server_supports_filtering;
+	int __advertise_sid;
+	struct shallow_lock __shallow_lock;
+	const char *__alternate_shallow_file;
+	struct fsck_options __fsck_options;	// = FSCK_OPTIONS_MISSING_GITMODULES;
+	struct strbuf __fsck_msg_types;	// = STRBUF_INIT;
+	struct string_list __uri_protocols;	// = STRING_LIST_INIT_DUP;
+	int __multi_ack, ____use_sideband;
+	unsigned int __allow_unadvertised_object_request;
+	struct commit_list *__complete;
+	struct {
+		int __initialized;
+		struct alternate_object_cache {
+			struct object **items;
+			size_t nr, alloc;
+		} __cache;
+	} for_each_cached_alternate;
+	struct {
+		int __did_setup;
+	} fetch_pack_setup;
+};
+static void __git_fetch_pack_mod_init(void *ctx)
+{
+	struct __git_fetch_pack_ctx_t *__git_fetch_pack_ctx = ctx;
+	__git_fetch_pack_ctx->__transfer_unpack_limit = -1;
+	__git_fetch_pack_ctx->__fetch_unpack_limit = -1;
+	__git_fetch_pack_ctx->__unpack_limit = 100;
+	__git_fetch_pack_ctx->__prefer_ofs_delta = 1;
+	__git_fetch_pack_ctx->__fetch_fsck_objects = -1;
+	__git_fetch_pack_ctx->__transfer_fsck_objects = -1;
+	__git_fetch_pack_ctx->__fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
+	__git_fetch_pack_ctx->__fsck_msg_types = STRBUF_INIT;
+	__git_fetch_pack_ctx->__uri_protocols = STRING_LIST_INIT_DUP;
+}
+define_vsf_git_mod(git_fetch_pack,
+	sizeof(struct __git_fetch_pack_ctx_t),
+	GIT_MOD_FETCH_PACK,
+	__git_fetch_pack_mod_init
+)
+#	define git_fetch_pack_ctx		((struct __git_fetch_pack_ctx_t *)vsf_git_ctx(git_fetch_pack))
+#	define transfer_unpack_limit	(git_fetch_pack_ctx->__transfer_unpack_limit)
+#	define fetch_unpack_limit		(git_fetch_pack_ctx->__fetch_unpack_limit)
+#	define unpack_limit				(git_fetch_pack_ctx->__unpack_limit)
+#	define prefer_ofs_delta			(git_fetch_pack_ctx->__prefer_ofs_delta)
+#	define no_done					(git_fetch_pack_ctx->__no_done)
+#	define deepen_since_ok			(git_fetch_pack_ctx->__deepen_since_ok)
+#	define deepen_not_ok			(git_fetch_pack_ctx->__deepen_not_ok)
+#	define fetch_fsck_objects		(git_fetch_pack_ctx->__fetch_fsck_objects)
+#	define transfer_fsck_objects	(git_fetch_pack_ctx->__transfer_fsck_objects)
+#	define agent_supported			(git_fetch_pack_ctx->__agent_supported)
+#	define server_supports_filtering	(git_fetch_pack_ctx->__server_supports_filtering)
+#	define advertise_sid			(git_fetch_pack_ctx->__advertise_sid)
+#	define shallow_lock				(git_fetch_pack_ctx->__shallow_lock)
+#	define alternate_shallow_file	(git_fetch_pack_ctx->__alternate_shallow_file)
+#	define fsck_options				(git_fetch_pack_ctx->__fsck_options)
+#	define fsck_msg_types			(git_fetch_pack_ctx->__fsck_msg_types)
+#	define uri_protocols			(git_fetch_pack_ctx->__uri_protocols)
+#else
 static int transfer_unpack_limit = -1;
 static int fetch_unpack_limit = -1;
 static int unpack_limit = 100;
@@ -44,6 +114,7 @@ static const char *alternate_shallow_file;
 static struct fsck_options fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
 static struct strbuf fsck_msg_types = STRBUF_INIT;
 static struct string_list uri_protocols = STRING_LIST_INIT_DUP;
+#endif
 
 /* Remember to update object flag allocation in object.h */
 #define COMPLETE	(1U << 0)
@@ -57,12 +128,21 @@ static struct string_list uri_protocols = STRING_LIST_INIT_DUP;
  */
 #define MAX_IN_VAIN 256
 
-static int multi_ack, use_sideband;
+#ifdef __VSF__
+#	define multi_ack				(git_fetch_pack_ctx->__multi_ack)
+#	define __use_sideband			(git_fetch_pack_ctx->____use_sideband)
+#else
+static int multi_ack, __use_sideband;
+#endif
 /* Allow specifying sha1 if it is a ref tip. */
 #define ALLOW_TIP_SHA1	01
 /* Allow request of a sha1 if it is reachable from a ref (possibly hidden ref). */
 #define ALLOW_REACHABLE_SHA1	02
+#ifdef __VSF__
+#	define allow_unadvertised_object_request	(git_fetch_pack_ctx->__allow_unadvertised_object_request)
+#else
 static unsigned int allow_unadvertised_object_request;
+#endif
 
 __attribute__((format (printf, 2, 3)))
 static inline void print_verbose(const struct fetch_pack_args *args,
@@ -79,10 +159,12 @@ static inline void print_verbose(const struct fetch_pack_args *args,
 	fputc('\n', stderr);
 }
 
+#ifndef __VSF__
 struct alternate_object_cache {
 	struct object **items;
 	size_t nr, alloc;
 };
+#endif
 
 static void cache_one_alternate(const struct object_id *oid,
 				void *vcache)
@@ -102,8 +184,13 @@ static void for_each_cached_alternate(struct fetch_negotiator *negotiator,
 				      void (*cb)(struct fetch_negotiator *,
 						 struct object *))
 {
+#ifdef __VSF__
+#	define initialized				(git_fetch_pack_ctx->for_each_cached_alternate.__initialized)
+#	define cache					(git_fetch_pack_ctx->for_each_cached_alternate.__cache)
+#else
 	static int initialized;
 	static struct alternate_object_cache cache;
+#endif
 	size_t i;
 
 	if (!initialized) {
@@ -113,6 +200,10 @@ static void for_each_cached_alternate(struct fetch_negotiator *negotiator,
 
 	for (i = 0; i < cache.nr; i++)
 		cb(negotiator, cache.items[i]);
+#ifdef __VSF__
+#	undef initialized
+#	undef cache
+#endif
 }
 
 static struct commit *deref_without_lazy_fetch(const struct object_id *oid,
@@ -333,8 +424,8 @@ static int find_common(struct fetch_negotiator *negotiator,
 			if (multi_ack == 2)     strbuf_addstr(&c, " multi_ack_detailed");
 			if (multi_ack == 1)     strbuf_addstr(&c, " multi_ack");
 			if (no_done)            strbuf_addstr(&c, " no-done");
-			if (use_sideband == 2)  strbuf_addstr(&c, " side-band-64k");
-			if (use_sideband == 1)  strbuf_addstr(&c, " side-band");
+			if (__use_sideband == 2)  strbuf_addstr(&c, " side-band-64k");
+			if (__use_sideband == 1)  strbuf_addstr(&c, " side-band");
 			if (args->deepen_relative) strbuf_addstr(&c, " deepen-relative");
 			if (args->use_thin_pack) strbuf_addstr(&c, " thin-pack");
 			if (args->no_progress)   strbuf_addstr(&c, " no-progress");
@@ -534,7 +625,11 @@ done:
 	return count ? retval : 0;
 }
 
+#ifdef __VSF__
+#	define complete					(git_fetch_pack_ctx->__complete)
+#else
 static struct commit_list *complete;
+#endif
 
 static int mark_complete(const struct object_id *oid)
 {
@@ -848,7 +943,7 @@ static int get_pack(struct fetch_pack_args *args,
 	int ret;
 
 	memset(&demux, 0, sizeof(demux));
-	if (use_sideband) {
+	if (__use_sideband) {
 		/* xd[] is talking with upload-pack; subprocess reads from
 		 * xd[0], spits out band#2 to stderr, and feeds us band#1
 		 * through demux->out.
@@ -975,7 +1070,7 @@ static int get_pack(struct fetch_pack_args *args,
 		close(cmd.out);
 	}
 
-	if (!use_sideband)
+	if (!__use_sideband)
 		/* Closed by start_command() */
 		xd[0] = -1;
 
@@ -986,7 +1081,7 @@ static int get_pack(struct fetch_pack_args *args,
 			ret == 0;
 	else
 		die(_("%s failed"), cmd_name);
-	if (use_sideband && finish_async(&demux))
+	if (__use_sideband && finish_async(&demux))
 		die(_("error in sideband demultiplexer"));
 
 	sigchain_pop(SIGPIPE);
@@ -1060,11 +1155,11 @@ static struct ref *do_fetch_pack(struct fetch_pack_args *args,
 	}
 	if (server_supports("side-band-64k")) {
 		print_verbose(args, _("Server supports %s"), "side-band-64k");
-		use_sideband = 2;
+		__use_sideband = 2;
 	}
 	else if (server_supports("side-band")) {
 		print_verbose(args, _("Server supports %s"), "side-band");
-		use_sideband = 1;
+		__use_sideband = 1;
 	}
 	if (server_supports("allow-tip-sha1-in-want")) {
 		print_verbose(args, _("Server supports %s"), "allow-tip-sha1-in-want");
@@ -1594,7 +1689,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 
 			/* v2 supports these by default */
 			allow_unadvertised_object_request |= ALLOW_REACHABLE_SHA1;
-			use_sideband = 2;
+			__use_sideband = 2;
 			if (args->depth > 0 || args->deepen_since || args->deepen_not)
 				args->deepen = 1;
 
@@ -1798,7 +1893,11 @@ static void fetch_pack_config(void)
 
 static void fetch_pack_setup(void)
 {
+#ifdef __VSF__
+#	define did_setup				(git_fetch_pack_ctx->fetch_pack_setup.__did_setup)
+#else
 	static int did_setup;
+#endif
 	if (did_setup)
 		return;
 	fetch_pack_config();
@@ -1807,6 +1906,9 @@ static void fetch_pack_setup(void)
 	else if (0 <= fetch_unpack_limit)
 		unpack_limit = fetch_unpack_limit;
 	did_setup = 1;
+#ifdef __VSF__
+#	undef did_setup
+#endif
 }
 
 static int remove_duplicates_in_refs(struct ref **ref, int nr)

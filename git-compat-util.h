@@ -19,7 +19,7 @@
             .mod_size           = (__mod_size),                                 \
             .init               = (__mod_init),                                 \
         };
-#define VSF_GIT_BSS_SIZE       32768
+#define VSF_GIT_BSS_SIZE       (256 * 1024)
 enum {
     GIT_MOD_OBSTACK = 0,
 
@@ -102,6 +102,9 @@ enum {
     GIT_MOD_REFSPEC,
     GIT_MOD_RUN_COMMAND,
     GIT_MOD_USAGE,
+    GIT_MOD_FETCH_PACK,
+    GIT_MOD_PKT_LINE,
+    GIT_MOD_PKT_LINE_PUBLIC,
 
     VSF_GIT_MOD_NUM,
 };
