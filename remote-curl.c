@@ -19,12 +19,12 @@
 #include "transport.h"
 
 #ifdef __VSF__
-#	define remote					(git_remote_curl_ctx->__remote)
-#	define url						(git_remote_curl_ctx->__url)
+#	define __remote					(git_remote_curl_ctx->____remote)
+#	define __url					(git_remote_curl_ctx->____url)
 #else
-static struct remote *remote;
+static struct remote *__remote;
 /* always ends with a trailing slash */
-static struct strbuf url = STRBUF_INIT;
+static struct strbuf __url = STRBUF_INIT;
 #endif
 
 struct options {
@@ -56,8 +56,8 @@ struct options {
 
 #ifdef __VSF__
 struct __git_remote_curl_ctx_t {
-	struct remote *__remote;
-	struct strbuf __url;			// = STRBUF_INIT;
+	struct remote *____remote;
+	struct strbuf ____url;			// = STRBUF_INIT;
 	struct options ____options;
 	struct string_list __cas_options;	// = STRING_LIST_INIT_DUP;
 	struct discovery {
@@ -74,7 +74,7 @@ struct __git_remote_curl_ctx_t {
 static void __git_remote_curl_mod_init(void *ctx)
 {
 	struct __git_remote_curl_ctx_t *__git_remote_curl_ctx = ctx;
-	__git_remote_curl_ctx->__url = STRBUF_INIT;
+	__git_remote_curl_ctx->____url = STRBUF_INIT;
 	__git_remote_curl_ctx->__cas_options = STRING_LIST_INIT_DUP;
 }
 define_vsf_git_mod(git_remote_curl,
@@ -331,7 +331,7 @@ static struct ref *parse_info_refs(struct discovery *heads)
 	if (!__options.hash_algo)
 		die("%sinfo/refs not valid: could not determine hash algorithm; "
 		    "is this a git repository?",
-		    transport_anonymize_url(url.buf));
+		    transport_anonymize_url(__url.buf));
 
 	data = heads->buf;
 	start = NULL;
@@ -345,7 +345,7 @@ static struct ref *parse_info_refs(struct discovery *heads)
 		if (data[i] == '\n') {
 			if (mid - start != __options.hash_algo->hexsz)
 				die(_("%sinfo/refs not valid: is this a git repository?"),
-				    transport_anonymize_url(url.buf));
+				    transport_anonymize_url(__url.buf));
 			data[i] = 0;
 			ref_name = mid + 1;
 			ref = alloc_ref(ref_name);
@@ -361,7 +361,7 @@ static struct ref *parse_info_refs(struct discovery *heads)
 	}
 
 	ref = alloc_ref("HEAD");
-	if (!http_fetch_ref(url.buf, ref) &&
+	if (!http_fetch_ref(__url.buf, ref) &&
 	    !resolve_remote_symref(ref, refs)) {
 		ref->next = refs;
 		refs = ref;
@@ -498,11 +498,11 @@ static struct discovery *discover_refs(const char *service, int for_push)
 		return last;
 	free_discovery(last);
 
-	strbuf_addf(&refs_url, "%sinfo/refs", url.buf);
-	if ((starts_with(url.buf, "http://") || starts_with(url.buf, "https://")) &&
+	strbuf_addf(&refs_url, "%sinfo/refs", __url.buf);
+	if ((starts_with(__url.buf, "http://") || starts_with(__url.buf, "https://")) &&
 	     git_env_bool("GIT_SMART_HTTP", 1)) {
 		maybe_smart = 1;
-		if (!strchr(url.buf, '?'))
+		if (!strchr(__url.buf, '?'))
 			strbuf_addch(&refs_url, '?');
 		else
 			strbuf_addch(&refs_url, '&');
@@ -525,7 +525,7 @@ static struct discovery *discover_refs(const char *service, int for_push)
 	http_options.content_type = &type;
 	http_options.charset = &charset;
 	http_options.effective_url = &effective_url;
-	http_options.base_url = &url;
+	http_options.base_url = &__url;
 	http_options.extra_headers = &extra_headers;
 	http_options.initial_request = 1;
 	http_options.no_cache = 1;
@@ -537,23 +537,23 @@ static struct discovery *discover_refs(const char *service, int for_push)
 	case HTTP_MISSING_TARGET:
 		show_http_message(&type, &charset, &buffer);
 		die(_("repository '%s' not found"),
-		    transport_anonymize_url(url.buf));
+		    transport_anonymize_url(__url.buf));
 	case HTTP_NOAUTH:
 		show_http_message(&type, &charset, &buffer);
 		die(_("Authentication failed for '%s'"),
-		    transport_anonymize_url(url.buf));
+		    transport_anonymize_url(__url.buf));
 	case HTTP_NOMATCHPUBLICKEY:
 		show_http_message(&type, &charset, &buffer);
 		die(_("unable to access '%s' with http.pinnedPubkey configuration: %s"),
-		    transport_anonymize_url(url.buf), curl_errorstr);
+		    transport_anonymize_url(__url.buf), curl_errorstr);
 	default:
 		show_http_message(&type, &charset, &buffer);
 		die(_("unable to access '%s': %s"),
-		    transport_anonymize_url(url.buf), curl_errorstr);
+		    transport_anonymize_url(__url.buf), curl_errorstr);
 	}
 
-	if (__options.verbosity && !starts_with(refs_url.buf, url.buf)) {
-		char *u = transport_anonymize_url(url.buf);
+	if (__options.verbosity && !starts_with(refs_url.buf, __url.buf)) {
+		char *u = transport_anonymize_url(__url.buf);
 		warning(_("redirecting to %s"), u);
 		free(u);
 	}
@@ -1116,7 +1116,7 @@ static int rpc_service(struct rpc_state *rpc, struct discovery *heads,
 	rpc->in = client.in;
 	rpc->out = client.out;
 
-	strbuf_addf(&buf, "%s%s", url.buf, svc);
+	strbuf_addf(&buf, "%s%s", __url.buf, svc);
 	rpc->service_url = strbuf_detach(&buf, NULL);
 
 	strbuf_addf(&buf, "Content-Type: application/x-%s-request", svc);
@@ -1175,7 +1175,7 @@ static int fetch_dumb(int nr_heads, struct ref **to_fetch)
 	for (i = 0; i < nr_heads; i++)
 		targets[i] = xstrdup(oid_to_hex(&to_fetch[i]->old_oid));
 
-	walker = get_http_walker(url.buf);
+	walker = get_http_walker(__url.buf);
 	walker->get_verbosely = __options.verbosity >= 3;
 	walker->get_progress = __options.progress;
 	walker->get_recover = 0;
@@ -1227,7 +1227,7 @@ static int fetch_git(struct discovery *heads,
 		strvec_push(&args, "--from-promisor");
 	if (__options.filter)
 		strvec_pushf(&args, "--filter=%s", __options.filter);
-	strvec_push(&args, url.buf);
+	strvec_push(&args, __url.buf);
 
 	for (i = 0; i < nr_heads; i++) {
 		struct ref *ref = to_fetch[i];
@@ -1325,7 +1325,7 @@ static int push_dav(int nr_spec, const char **specs)
 		strvec_push(&child.args, "--dry-run");
 	if (__options.verbosity > 1)
 		strvec_push(&child.args, "--verbose");
-	strvec_push(&child.args, url.buf);
+	strvec_push(&child.args, __url.buf);
 	for (i = 0; i < nr_spec; i++)
 		strvec_push(&child.args, specs[i]);
 
@@ -1367,7 +1367,7 @@ static int push_git(struct discovery *heads, int nr_spec, const char **specs)
 	strvec_push(&args, __options.progress ? "--progress" : "--no-progress");
 	for_each_string_list_item(cas_option, &cas_options)
 		strvec_push(&args, cas_option->string);
-	strvec_push(&args, url.buf);
+	strvec_push(&args, __url.buf);
 
 	if (__options.force_if_includes)
 		strvec_push(&args, "--force-if-includes");
@@ -1457,7 +1457,7 @@ static int stateless_connect(const char *service_name)
 	}
 
 	rpc.service_name = service_name;
-	rpc.service_url = xstrfmt("%s%s", url.buf, rpc.service_name);
+	rpc.service_url = xstrfmt("%s%s", __url.buf, rpc.service_name);
 	rpc.hdr_content_type = xstrfmt("Content-Type: application/x-%s-request", rpc.service_name);
 	rpc.hdr_accept = xstrfmt("Accept: application/x-%s-result", rpc.service_name);
 	if (get_protocol_http_header(discover->version, &buf)) {
@@ -1535,15 +1535,15 @@ int cmd_main(int argc, const char **argv)
 	 */
 	trace2_cmd_name("remote-curl");
 
-	remote = remote_get(argv[1]);
+	__remote = remote_get(argv[1]);
 
 	if (argc > 2) {
-		end_url_with_slash(&url, argv[2]);
+		end_url_with_slash(&__url, argv[2]);
 	} else {
-		end_url_with_slash(&url, remote->url[0]);
+		end_url_with_slash(&__url, __remote->url[0]);
 	}
 
-	http_init(remote, url.buf, 0);
+	http_init(__remote, __url.buf, 0);
 
 	do {
 		const char *arg;
