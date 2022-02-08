@@ -6,13 +6,67 @@
 #include "chdir-notify.h"
 #include "promisor-remote.h"
 
+#ifdef __VSF__
+static void __git_setup_public_mod_init(void *ctx);
+define_vsf_git_mod(git_setup_public,
+	sizeof(struct __git_setup_public_ctx_t),
+	GIT_MOD_SETUP_PUBLIC,
+	__git_setup_public_mod_init
+)
+
+struct __git_setup_ctx_t {
+	int __inside_git_dir;			// = -1;
+	int __inside_work_tree;			// = -1;
+	int __work_tree_config_is_bogus;
+	struct startup_info_t __the_startup_info;
+
+	struct {
+		int __initialized;
+	} setup_work_tree;
+	struct {
+		struct strbuf __realpath;	// = STRBUF_INIT;
+	} read_gitfile_gently;
+	struct {
+		const char *__gitdir;
+	} setup_bare_git_dir;
+	struct {
+		struct strbuf __cwd;		// = STRBUF_INIT;
+	} setup_git_directory_gently;
+};
+static void __git_setup_mod_init(void *ctx)
+{
+    struct __git_setup_ctx_t *__git_setup_ctx = ctx;
+    __git_setup_ctx->__inside_git_dir = -1;
+    __git_setup_ctx->__inside_work_tree = -1;
+    __git_setup_ctx->read_gitfile_gently.__realpath = STRBUF_INIT;
+    __git_setup_ctx->setup_git_directory_gently.__cwd = STRBUF_INIT;
+}
+define_vsf_git_mod(git_setup,
+	sizeof(struct __git_setup_ctx_t),
+	GIT_MOD_SETUP,
+	__git_setup_mod_init
+)
+#	define git_setup_ctx			((struct __git_setup_ctx_t *)vsf_git_ctx(git_setup))
+#	define inside_git_dir			(git_setup_ctx->__inside_git_dir)
+#	define inside_work_tree			(git_setup_ctx->__inside_work_tree)
+#	define work_tree_config_is_bogus	(git_setup_ctx->__work_tree_config_is_bogus)
+#	define the_startup_info			(git_setup_ctx->__the_startup_info)
+
+static void __git_setup_public_mod_init(void *ctx)
+{
+    struct __git_setup_public_ctx_t *__git_setup_public_ctx = ctx;
+    __git_setup_public_ctx->__startup_info = &the_startup_info;
+}
+
+#else
 static int inside_git_dir = -1;
 static int inside_work_tree = -1;
 static int work_tree_config_is_bogus;
 
-static struct startup_info the_startup_info;
-struct startup_info *startup_info = &the_startup_info;
+static struct startup_info_t the_startup_info;
+struct startup_info_t *startup_info = &the_startup_info;
 const char *tmp_original_cwd;
+#endif
 
 /*
  * The input parameter must contain an absolute path, and it must already be
@@ -411,7 +465,11 @@ int is_inside_work_tree(void)
 void setup_work_tree(void)
 {
 	const char *work_tree;
+#ifdef __VSF__
+#	define initialized				(git_setup_ctx->setup_work_tree.__initialized)
+#else
 	static int initialized = 0;
+#endif
 
 	if (initialized)
 		return;
@@ -431,6 +489,9 @@ void setup_work_tree(void)
 		setenv(GIT_WORK_TREE_ENVIRONMENT, ".", 1);
 
 	initialized = 1;
+#ifdef __VSF__
+#	undef initialized
+#endif
 }
 
 static void setup_original_cwd(void)
@@ -798,7 +859,11 @@ const char *read_gitfile_gently(const char *path, int *return_error_code)
 	struct stat st;
 	int fd;
 	ssize_t len;
+#ifdef __VSF__
+#	define realpath					(git_setup_ctx->read_gitfile_gently.__realpath)
+#else
 	static struct strbuf realpath = STRBUF_INIT;
+#endif
 
 	if (stat(path, &st)) {
 		/* NEEDSWORK: discern between ENOENT vs other errors */
@@ -861,6 +926,9 @@ cleanup_return:
 
 	free(buf);
 	return error_code ? NULL : path;
+#ifdef __VSF__
+#	undef realpath
+#endif
 }
 
 static const char *setup_explicit_git_dir(const char *gitdirenv,
@@ -1023,12 +1091,19 @@ static const char *setup_bare_git_dir(struct strbuf *cwd, int offset,
 
 	/* --work-tree is set without --git-dir; use discovered one */
 	if (getenv(GIT_WORK_TREE_ENVIRONMENT) || git_work_tree_cfg) {
+#ifdef __VSF__
+#	define gitdir					(git_setup_ctx->setup_bare_git_dir.__gitdir)
+#else
 		static const char *gitdir;
+#endif
 
 		gitdir = offset == cwd->len ? "." : xmemdupz(cwd->buf, offset);
 		if (chdir(cwd->buf))
 			die_errno(_("cannot come back to cwd"));
 		return setup_explicit_git_dir(gitdir, cwd, repo_fmt, nongit_ok);
+#ifdef __VSF__
+#	undef gitdir
+#endif
 	}
 
 	inside_git_dir = 1;
@@ -1269,7 +1344,11 @@ int discover_git_directory(struct strbuf *commondir,
 
 const char *setup_git_directory_gently(int *nongit_ok)
 {
+#ifdef __VSF__
+#	define cwd						(git_setup_ctx->setup_git_directory_gently.__cwd)
+#else
 	static struct strbuf cwd = STRBUF_INIT;
+#endif
 	struct strbuf dir = STRBUF_INIT, gitdir = STRBUF_INIT;
 	const char *prefix = NULL;
 	struct repository_format repo_fmt = REPOSITORY_FORMAT_INIT;
@@ -1401,6 +1480,9 @@ const char *setup_git_directory_gently(int *nongit_ok)
 	clear_repository_format(&repo_fmt);
 
 	return prefix;
+#ifdef __VSF__
+#	undef cwd
+#endif
 }
 
 int git_config_perm(const char *var, const char *value)

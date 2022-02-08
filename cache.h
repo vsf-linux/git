@@ -2044,13 +2044,24 @@ void overlay_tree_on_index(struct index_state *istate,
 			   const char *tree_name, const char *prefix);
 
 /* setup.c */
-struct startup_info {
+struct startup_info_t {
 	int have_repository;
 	const char *prefix;
 	const char *original_cwd;
 };
-extern struct startup_info *startup_info;
+#ifdef __VSF__
+struct __git_setup_public_ctx_t {
+	struct startup_info_t *__startup_info;
+	const char *__tmp_original_cwd;
+};
+declare_vsf_git_mod(git_setup_public)
+#	define git_setup_public_ctx			((struct __git_setup_public_ctx_t *)vsf_git_ctx(git_setup_public))
+#	define startup_info					(git_setup_public_ctx->__startup_info)
+#	define tmp_original_cwd				(git_setup_public_ctx->__tmp_original_cwd)
+#else
+extern struct startup_info *__startup_info;
 extern const char *tmp_original_cwd;
+#endif
 
 /* merge.c */
 struct commit_list;

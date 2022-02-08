@@ -2,7 +2,6 @@
 #define REFSPEC_H
 
 #define TAG_REFSPEC "refs/tags/*:refs/tags/*"
-extern const struct refspec_item *tag_refspec;
 
 /**
  * A struct refspec_item holds the parsed interpretation of a refspec.  If it
@@ -28,6 +27,18 @@ struct refspec_item {
 	char *src;
 	char *dst;
 };
+
+#ifdef __VSF__
+struct __git_refspec_ctx_t {
+	const struct refspec_item *__tag_refspec;
+	struct refspec_item __s_tag_refspec;
+};
+declare_vsf_git_mod(git_refspec)
+#	define git_refspec_ctx		((struct __git_refspec_ctx_t *)vsf_git_ctx(git_refspec))
+#	define tag_refspec			(git_refspec_ctx->__tag_refspec)
+#else
+extern const struct refspec_item *tag_refspec;
+#endif
 
 #define REFSPEC_FETCH 1
 #define REFSPEC_PUSH 0

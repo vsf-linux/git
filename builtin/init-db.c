@@ -23,8 +23,28 @@
 
 #define GIT_DEFAULT_HASH_ENVIRONMENT "GIT_DEFAULT_HASH"
 
+#ifdef __VSF__
+struct __git_builtin_init_db_ctx_t {
+	int __init_is_bare_repository;
+	int __init_shared_repository;	// = -1;
+};
+static void __git_builtin_init_db_mod_init(void *ctx)
+{
+	struct __git_builtin_init_db_ctx_t *__git_builtin_init_db_ctx = ctx;
+	__git_builtin_init_db_ctx->__init_shared_repository = -1;
+}
+define_vsf_git_mod(git_builtin_init_db,
+	sizeof(struct __git_builtin_init_db_ctx_t),
+	GIT_MOD_BUILTIN_INIT_DB,
+	__git_builtin_init_db_mod_init
+)
+#	define git_builtin_init_db_ctx	((struct __git_builtin_init_db_ctx_t *)vsf_git_ctx(git_builtin_init_db))
+#	define init_is_bare_repository	(git_builtin_init_db_ctx->__init_is_bare_repository)
+#	define init_shared_repository	(git_builtin_init_db_ctx->__init_shared_repository)
+#else
 static int init_is_bare_repository = 0;
 static int init_shared_repository = -1;
+#endif
 
 static void copy_templates_1(struct strbuf *path, struct strbuf *template_path,
 			     DIR *dir)

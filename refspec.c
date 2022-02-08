@@ -3,6 +3,27 @@
 #include "refs.h"
 #include "refspec.h"
 
+#ifdef __VSF__
+static void __git_refspec_mod_init(void *ctx)
+{
+	struct __git_refspec_ctx_t *__git_refspec_ctx = ctx;
+	__git_refspec_ctx->__s_tag_refspec = (struct refspec_item) {
+		0,
+		1,
+		0,
+		0,
+		0,
+		"refs/tags/*",
+		"refs/tags/*"
+	};
+	__git_refspec_ctx->__tag_refspec = &__git_refspec_ctx->__s_tag_refspec;
+}
+define_vsf_git_mod(git_refspec,
+	sizeof(struct __git_refspec_ctx_t),
+	GIT_MOD_REFSPEC,
+	__git_refspec_mod_init
+)
+#else
 static struct refspec_item s_tag_refspec = {
 	0,
 	1,
@@ -15,6 +36,7 @@ static struct refspec_item s_tag_refspec = {
 
 /* See TAG_REFSPEC for the string version */
 const struct refspec_item *tag_refspec = &s_tag_refspec;
+#endif
 
 /*
  * Parses the provided refspec 'refspec' and populates the refspec_item 'item'.
