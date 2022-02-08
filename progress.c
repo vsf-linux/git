@@ -45,6 +45,30 @@ struct progress {
 	int split;
 };
 
+#ifdef __VSF__
+struct __git_progress_ctx_t {
+	volatile sig_atomic_t __progress_update;
+	int __progress_testing;
+	uint64_t __progress_test_ns;
+	struct {
+		int __delay_in_secs;		// = -1;
+	} get_default_delay;
+};
+static void __git_progress_mod_init(void *ctx)
+{
+	struct __git_progress_ctx_t *__git_progress_ctx = ctx;
+	__git_progress_ctx->get_default_delay.__delay_in_secs = -1;
+}
+define_vsf_git_mod(git_progress,
+	sizeof(struct __git_progress_ctx_t),
+	GIT_MOD_PROGRESS,
+	__git_progress_mod_init
+)
+#	define git_progress_ctx			((struct __git_progress_ctx_t *)vsf_git_ctx(git_progress))
+#	define progress_update			(git_progress_ctx->__progress_update)
+#	define progress_testing			(git_progress_ctx->__progress_testing)
+#	define progress_test_ns			(git_progress_ctx->__progress_test_ns)
+#else
 static volatile sig_atomic_t progress_update;
 
 /*
@@ -53,6 +77,7 @@ static volatile sig_atomic_t progress_update;
  */
 int progress_testing;
 uint64_t progress_test_ns = 0;
+#endif
 void progress_test_force_update(void)
 {
 	progress_update = 1;
@@ -271,12 +296,19 @@ static struct progress *start_progress_delay(const char *title, uint64_t total,
 
 static int get_default_delay(void)
 {
+#ifdef __VSF__
+#	define delay_in_secs			(git_progress_ctx->get_default_delay.__delay_in_secs)
+#else
 	static int delay_in_secs = -1;
+#endif
 
 	if (delay_in_secs < 0)
 		delay_in_secs = git_env_ulong("GIT_PROGRESS_DELAY", 2);
 
 	return delay_in_secs;
+#ifdef __VSF__
+#	undef delay_in_secs
+#endif
 }
 
 struct progress *start_delayed_progress(const char *title, uint64_t total)

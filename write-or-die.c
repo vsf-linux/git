@@ -2,6 +2,25 @@
 #include "config.h"
 #include "run-command.h"
 
+#ifdef __VSF__
+struct __git_write_or_die_ctx_t {
+	struct {
+		int __skip_stdout_flush;	// = -1;
+	} maybe_flush_or_die;
+};
+static void __git_write_or_die_mod_init(void *ctx)
+{
+	struct __git_write_or_die_ctx_t *__git_write_or_die_ctx = ctx;
+	__git_write_or_die_ctx->maybe_flush_or_die.__skip_stdout_flush = -1;
+}
+define_vsf_git_mod(git_write_or_die,
+	sizeof(struct __git_write_or_die_ctx_t),
+	GIT_MOD_WRITE_OR_DIE,
+	__git_write_or_die_mod_init
+)
+#	define git_write_or_die_ctx		((struct __git_write_or_die_ctx_t *)vsf_git_ctx(git_write_or_die))
+#endif
+
 /*
  * Some cases use stdio, but want to flush after the write
  * to get error handling (and to get better interactive
@@ -17,7 +36,11 @@
  */
 void maybe_flush_or_die(FILE *f, const char *desc)
 {
+#ifdef __VSF__
+#	define skip_stdout_flush		(git_write_or_die_ctx->maybe_flush_or_die.__skip_stdout_flush)
+#else
 	static int skip_stdout_flush = -1;
+#endif
 	struct stat st;
 	char *cp;
 
@@ -39,6 +62,9 @@ void maybe_flush_or_die(FILE *f, const char *desc)
 		check_pipe(errno);
 		die_errno("write failure on '%s'", desc);
 	}
+#ifdef __VSF__
+#	undef skip_stdout_flush
+#endif
 }
 
 void fprintf_or_die(FILE *f, const char *fmt, ...)

@@ -18,9 +18,14 @@
 #include "quote.h"
 #include "transport.h"
 
+#ifdef __VSF__
+#	define remote					(git_remote_curl_ctx->__remote)
+#	define url						(git_remote_curl_ctx->__url)
+#else
 static struct remote *remote;
 /* always ends with a trailing slash */
 static struct strbuf url = STRBUF_INIT;
+#endif
 
 struct options {
 	int verbosity;
@@ -48,8 +53,42 @@ struct options {
 		force_if_includes : 1;
 	const struct git_hash_algo *hash_algo;
 };
-static struct options options;
+
+#ifdef __VSF__
+struct __git_remote_curl_ctx_t {
+	struct remote *__remote;
+	struct strbuf __url;			// = STRBUF_INIT;
+	struct options ____options;
+	struct string_list __cas_options;	// = STRING_LIST_INIT_DUP;
+	struct discovery {
+		char *service;
+		char *buf_alloc;
+		char *buf;
+		size_t len;
+		struct ref *refs;
+		struct oid_array shallow;
+		enum protocol_version version;
+		unsigned proto_git : 1;
+	} *__last_discovery;
+};
+static void __git_remote_curl_mod_init(void *ctx)
+{
+	struct __git_remote_curl_ctx_t *__git_remote_curl_ctx = ctx;
+	__git_remote_curl_ctx->__url = STRBUF_INIT;
+	__git_remote_curl_ctx->__cas_options = STRING_LIST_INIT_DUP;
+}
+define_vsf_git_mod(git_remote_curl,
+	sizeof(struct __git_remote_curl_ctx_t),
+	GIT_MOD_REMOTE_CURL,
+	__git_remote_curl_mod_init
+)
+#	define git_remote_curl_ctx		((struct __git_remote_curl_ctx_t *)vsf_git_ctx(git_remote_curl))
+#	define __options				(git_remote_curl_ctx->____options)
+#	define cas_options				(git_remote_curl_ctx->__cas_options)
+#else
+static struct options __options;
 static struct string_list cas_options = STRING_LIST_INIT_DUP;
+#endif
 
 static int set_option(const char *name, const char *value)
 {
@@ -58,14 +97,14 @@ static int set_option(const char *name, const char *value)
 		int v = strtol(value, &end, 10);
 		if (value == end || *end)
 			return -1;
-		options.verbosity = v;
+		__options.verbosity = v;
 		return 0;
 	}
 	else if (!strcmp(name, "progress")) {
 		if (!strcmp(value, "true"))
-			options.progress = 1;
+			__options.progress = 1;
 		else if (!strcmp(value, "false"))
-			options.progress = 0;
+			__options.progress = 0;
 		else
 			return -1;
 		return 0;
@@ -75,49 +114,49 @@ static int set_option(const char *name, const char *value)
 		unsigned long v = strtoul(value, &end, 10);
 		if (value == end || *end)
 			return -1;
-		options.depth = v;
+		__options.depth = v;
 		return 0;
 	}
 	else if (!strcmp(name, "deepen-since")) {
-		options.deepen_since = xstrdup(value);
+		__options.deepen_since = xstrdup(value);
 		return 0;
 	}
 	else if (!strcmp(name, "deepen-not")) {
-		string_list_append(&options.deepen_not, value);
+		string_list_append(&__options.deepen_not, value);
 		return 0;
 	}
 	else if (!strcmp(name, "deepen-relative")) {
 		if (!strcmp(value, "true"))
-			options.deepen_relative = 1;
+			__options.deepen_relative = 1;
 		else if (!strcmp(value, "false"))
-			options.deepen_relative = 0;
+			__options.deepen_relative = 0;
 		else
 			return -1;
 		return 0;
 	}
 	else if (!strcmp(name, "followtags")) {
 		if (!strcmp(value, "true"))
-			options.followtags = 1;
+			__options.followtags = 1;
 		else if (!strcmp(value, "false"))
-			options.followtags = 0;
+			__options.followtags = 0;
 		else
 			return -1;
 		return 0;
 	}
 	else if (!strcmp(name, "dry-run")) {
 		if (!strcmp(value, "true"))
-			options.dry_run = 1;
+			__options.dry_run = 1;
 		else if (!strcmp(value, "false"))
-			options.dry_run = 0;
+			__options.dry_run = 0;
 		else
 			return -1;
 		return 0;
 	}
 	else if (!strcmp(name, "check-connectivity")) {
 		if (!strcmp(value, "true"))
-			options.check_self_contained_and_connected = 1;
+			__options.check_self_contained_and_connected = 1;
 		else if (!strcmp(value, "false"))
-			options.check_self_contained_and_connected = 0;
+			__options.check_self_contained_and_connected = 0;
 		else
 			return -1;
 		return 0;
@@ -134,54 +173,54 @@ static int set_option(const char *name, const char *value)
 		return 0;
 	} else if (!strcmp(name, TRANS_OPT_FORCE_IF_INCLUDES)) {
 		if (!strcmp(value, "true"))
-			options.force_if_includes = 1;
+			__options.force_if_includes = 1;
 		else if (!strcmp(value, "false"))
-			options.force_if_includes = 0;
+			__options.force_if_includes = 0;
 		else
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "cloning")) {
 		if (!strcmp(value, "true"))
-			options.cloning = 1;
+			__options.cloning = 1;
 		else if (!strcmp(value, "false"))
-			options.cloning = 0;
+			__options.cloning = 0;
 		else
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "update-shallow")) {
 		if (!strcmp(value, "true"))
-			options.update_shallow = 1;
+			__options.update_shallow = 1;
 		else if (!strcmp(value, "false"))
-			options.update_shallow = 0;
+			__options.update_shallow = 0;
 		else
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "pushcert")) {
 		if (!strcmp(value, "true"))
-			options.push_cert = SEND_PACK_PUSH_CERT_ALWAYS;
+			__options.push_cert = SEND_PACK_PUSH_CERT_ALWAYS;
 		else if (!strcmp(value, "false"))
-			options.push_cert = SEND_PACK_PUSH_CERT_NEVER;
+			__options.push_cert = SEND_PACK_PUSH_CERT_NEVER;
 		else if (!strcmp(value, "if-asked"))
-			options.push_cert = SEND_PACK_PUSH_CERT_IF_ASKED;
+			__options.push_cert = SEND_PACK_PUSH_CERT_IF_ASKED;
 		else
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "atomic")) {
 		if (!strcmp(value, "true"))
-			options.atomic = 1;
+			__options.atomic = 1;
 		else if (!strcmp(value, "false"))
-			options.atomic = 0;
+			__options.atomic = 0;
 		else
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "push-option")) {
 		if (*value != '"')
-			string_list_append(&options.push_options, value);
+			string_list_append(&__options.push_options, value);
 		else {
 			struct strbuf unquoted = STRBUF_INIT;
 			if (unquote_c_style(&unquoted, value, NULL) < 0)
 				die(_("invalid quoting in push-option value: '%s'"), value);
-			string_list_append_nodup(&options.push_options,
+			string_list_append_nodup(&__options.push_options,
 						 strbuf_detach(&unquoted, NULL));
 		}
 		return 0;
@@ -196,19 +235,19 @@ static int set_option(const char *name, const char *value)
 			return -1;
 		return 0;
 	} else if (!strcmp(name, "from-promisor")) {
-		options.from_promisor = 1;
+		__options.from_promisor = 1;
 		return 0;
 	} else if (!strcmp(name, "filter")) {
-		options.filter = xstrdup(value);
+		__options.filter = xstrdup(value);
 		return 0;
 	} else if (!strcmp(name, "object-format")) {
 		int algo;
-		options.object_format = 1;
+		__options.object_format = 1;
 		if (strcmp(value, "true")) {
 			algo = hash_algo_by_name(value);
 			if (algo == GIT_HASH_UNKNOWN)
 				die("unknown object format '%s'", value);
-			options.hash_algo = &hash_algos[algo];
+			__options.hash_algo = &hash_algos[algo];
 		}
 		return 0;
 	} else {
@@ -216,6 +255,9 @@ static int set_option(const char *name, const char *value)
 	}
 }
 
+#ifdef __VSF__
+#	define last_discovery			(git_remote_curl_ctx->__last_discovery)
+#else
 struct discovery {
 	char *service;
 	char *buf_alloc;
@@ -227,6 +269,7 @@ struct discovery {
 	unsigned proto_git : 1;
 };
 static struct discovery *last_discovery;
+#endif
 
 static struct ref *parse_git_refs(struct discovery *heads, int for_push)
 {
@@ -252,7 +295,7 @@ static struct ref *parse_git_refs(struct discovery *heads, int for_push)
 	case protocol_v0:
 		get_remote_heads(&reader, &list, for_push ? REF_NORMAL : 0,
 				 NULL, &heads->shallow);
-		options.hash_algo = reader.hash_algo;
+		__options.hash_algo = reader.hash_algo;
 		break;
 	case protocol_unknown_version:
 		BUG("unknown protocol version");
@@ -284,8 +327,8 @@ static struct ref *parse_info_refs(struct discovery *heads)
 	struct ref *ref = NULL;
 	struct ref *last_ref = NULL;
 
-	options.hash_algo = detect_hash_algo(heads);
-	if (!options.hash_algo)
+	__options.hash_algo = detect_hash_algo(heads);
+	if (!__options.hash_algo)
 		die("%sinfo/refs not valid: could not determine hash algorithm; "
 		    "is this a git repository?",
 		    transport_anonymize_url(url.buf));
@@ -300,13 +343,13 @@ static struct ref *parse_info_refs(struct discovery *heads)
 		if (data[i] == '\t')
 			mid = &data[i];
 		if (data[i] == '\n') {
-			if (mid - start != options.hash_algo->hexsz)
+			if (mid - start != __options.hash_algo->hexsz)
 				die(_("%sinfo/refs not valid: is this a git repository?"),
 				    transport_anonymize_url(url.buf));
 			data[i] = 0;
 			ref_name = mid + 1;
 			ref = alloc_ref(ref_name);
-			get_oid_hex_algop(start, &ref->old_oid, options.hash_algo);
+			get_oid_hex_algop(start, &ref->old_oid, __options.hash_algo);
 			if (!refs)
 				refs = ref;
 			if (last_ref)
@@ -509,7 +552,7 @@ static struct discovery *discover_refs(const char *service, int for_push)
 		    transport_anonymize_url(url.buf), curl_errorstr);
 	}
 
-	if (options.verbosity && !starts_with(refs_url.buf, url.buf)) {
+	if (__options.verbosity && !starts_with(refs_url.buf, url.buf)) {
 		char *u = transport_anonymize_url(url.buf);
 		warning(_("redirecting to %s"), u);
 		free(u);
@@ -554,17 +597,17 @@ static struct ref *get_refs(int for_push)
 static void output_refs(struct ref *refs)
 {
 	struct ref *posn;
-	if (options.object_format && options.hash_algo) {
-		printf(":object-format %s\n", options.hash_algo->name);
+	if (__options.object_format && __options.hash_algo) {
+		printf(":object-format %s\n", __options.hash_algo->name);
 		repo_set_hash_algo(the_repository,
-				hash_algo_by_ptr(options.hash_algo));
+				hash_algo_by_ptr(__options.hash_algo));
 	}
 	for (posn = refs; posn; posn = posn->next) {
 		if (posn->symref)
 			printf("@%s %s\n", posn->symref, posn->name);
 		else
 			printf("%s %s\n", hash_to_hex_algop(posn->old_oid.hash,
-							    options.hash_algo),
+							    __options.hash_algo),
 					  posn->name);
 	}
 	printf("\n");
@@ -950,7 +993,7 @@ retry:
 		curl_easy_setopt(slot->curl, CURLOPT_INFILE, rpc);
 		curl_easy_setopt(slot->curl, CURLOPT_IOCTLFUNCTION, rpc_ioctl);
 		curl_easy_setopt(slot->curl, CURLOPT_IOCTLDATA, rpc);
-		if (options.verbosity > 1) {
+		if (__options.verbosity > 1) {
 			fprintf(stderr, "POST %s (chunked)\n", rpc->service_name);
 			fflush(stderr);
 		}
@@ -995,7 +1038,7 @@ retry:
 		curl_easy_setopt(slot->curl, CURLOPT_POSTFIELDS, gzip_body);
 		curl_easy_setopt(slot->curl, CURLOPT_POSTFIELDSIZE_LARGE, xcurl_off_t(gzip_size));
 
-		if (options.verbosity > 1) {
+		if (__options.verbosity > 1) {
 			fprintf(stderr, "POST %s (gzip %lu to %lu bytes)\n",
 				rpc->service_name,
 				(unsigned long)rpc->len, (unsigned long)gzip_size);
@@ -1007,7 +1050,7 @@ retry:
 		 */
 		curl_easy_setopt(slot->curl, CURLOPT_POSTFIELDS, rpc->buf);
 		curl_easy_setopt(slot->curl, CURLOPT_POSTFIELDSIZE_LARGE, xcurl_off_t(rpc->len));
-		if (options.verbosity > 1) {
+		if (__options.verbosity > 1) {
 			fprintf(stderr, "POST %s (%lu bytes)\n",
 				rpc->service_name, (unsigned long)rpc->len);
 			fflush(stderr);
@@ -1127,14 +1170,14 @@ static int fetch_dumb(int nr_heads, struct ref **to_fetch)
 	int ret, i;
 
 	ALLOC_ARRAY(targets, nr_heads);
-	if (options.depth || options.deepen_since)
+	if (__options.depth || __options.deepen_since)
 		die(_("dumb http transport does not support shallow capabilities"));
 	for (i = 0; i < nr_heads; i++)
 		targets[i] = xstrdup(oid_to_hex(&to_fetch[i]->old_oid));
 
 	walker = get_http_walker(url.buf);
-	walker->get_verbosely = options.verbosity >= 3;
-	walker->get_progress = options.progress;
+	walker->get_verbosely = __options.verbosity >= 3;
+	walker->get_progress = __options.progress;
 	walker->get_recover = 0;
 	ret = walker_fetch(walker, nr_heads, targets, NULL, NULL);
 	walker_free(walker);
@@ -1157,33 +1200,33 @@ static int fetch_git(struct discovery *heads,
 
 	strvec_pushl(&args, "fetch-pack", "--stateless-rpc",
 		     "--stdin", "--lock-pack", NULL);
-	if (options.followtags)
+	if (__options.followtags)
 		strvec_push(&args, "--include-tag");
-	if (options.thin)
+	if (__options.thin)
 		strvec_push(&args, "--thin");
-	if (options.verbosity >= 3)
+	if (__options.verbosity >= 3)
 		strvec_pushl(&args, "-v", "-v", NULL);
-	if (options.check_self_contained_and_connected)
+	if (__options.check_self_contained_and_connected)
 		strvec_push(&args, "--check-self-contained-and-connected");
-	if (options.cloning)
+	if (__options.cloning)
 		strvec_push(&args, "--cloning");
-	if (options.update_shallow)
+	if (__options.update_shallow)
 		strvec_push(&args, "--update-shallow");
-	if (!options.progress)
+	if (!__options.progress)
 		strvec_push(&args, "--no-progress");
-	if (options.depth)
-		strvec_pushf(&args, "--depth=%lu", options.depth);
-	if (options.deepen_since)
-		strvec_pushf(&args, "--shallow-since=%s", options.deepen_since);
-	for (i = 0; i < options.deepen_not.nr; i++)
+	if (__options.depth)
+		strvec_pushf(&args, "--depth=%lu", __options.depth);
+	if (__options.deepen_since)
+		strvec_pushf(&args, "--shallow-since=%s", __options.deepen_since);
+	for (i = 0; i < __options.deepen_not.nr; i++)
 		strvec_pushf(&args, "--shallow-exclude=%s",
-			     options.deepen_not.items[i].string);
-	if (options.deepen_relative && options.depth)
+			     __options.deepen_not.items[i].string);
+	if (__options.deepen_relative && __options.depth)
 		strvec_push(&args, "--deepen-relative");
-	if (options.from_promisor)
+	if (__options.from_promisor)
 		strvec_push(&args, "--from-promisor");
-	if (options.filter)
-		strvec_pushf(&args, "--filter=%s", options.filter);
+	if (__options.filter)
+		strvec_pushf(&args, "--filter=%s", __options.filter);
 	strvec_push(&args, url.buf);
 
 	for (i = 0; i < nr_heads; i++) {
@@ -1278,9 +1321,9 @@ static int push_dav(int nr_spec, const char **specs)
 	child.git_cmd = 1;
 	strvec_push(&child.args, "http-push");
 	strvec_push(&child.args, "--helper-status");
-	if (options.dry_run)
+	if (__options.dry_run)
 		strvec_push(&child.args, "--dry-run");
-	if (options.verbosity > 1)
+	if (__options.verbosity > 1)
 		strvec_push(&child.args, "--verbose");
 	strvec_push(&child.args, url.buf);
 	for (i = 0; i < nr_spec; i++)
@@ -1304,29 +1347,29 @@ static int push_git(struct discovery *heads, int nr_spec, const char **specs)
 	strvec_pushl(&args, "send-pack", "--stateless-rpc", "--helper-status",
 		     NULL);
 
-	if (options.thin)
+	if (__options.thin)
 		strvec_push(&args, "--thin");
-	if (options.dry_run)
+	if (__options.dry_run)
 		strvec_push(&args, "--dry-run");
-	if (options.push_cert == SEND_PACK_PUSH_CERT_ALWAYS)
+	if (__options.push_cert == SEND_PACK_PUSH_CERT_ALWAYS)
 		strvec_push(&args, "--signed=yes");
-	else if (options.push_cert == SEND_PACK_PUSH_CERT_IF_ASKED)
+	else if (__options.push_cert == SEND_PACK_PUSH_CERT_IF_ASKED)
 		strvec_push(&args, "--signed=if-asked");
-	if (options.atomic)
+	if (__options.atomic)
 		strvec_push(&args, "--atomic");
-	if (options.verbosity == 0)
+	if (__options.verbosity == 0)
 		strvec_push(&args, "--quiet");
-	else if (options.verbosity > 1)
+	else if (__options.verbosity > 1)
 		strvec_push(&args, "--verbose");
-	for (i = 0; i < options.push_options.nr; i++)
+	for (i = 0; i < __options.push_options.nr; i++)
 		strvec_pushf(&args, "--push-option=%s",
-			     options.push_options.items[i].string);
-	strvec_push(&args, options.progress ? "--progress" : "--no-progress");
+			     __options.push_options.items[i].string);
+	strvec_push(&args, __options.progress ? "--progress" : "--no-progress");
 	for_each_string_list_item(cas_option, &cas_options)
 		strvec_push(&args, cas_option->string);
 	strvec_push(&args, url.buf);
 
-	if (options.force_if_includes)
+	if (__options.force_if_includes)
 		strvec_push(&args, "--force-if-includes");
 
 	strvec_push(&args, "--stdin");
@@ -1479,11 +1522,11 @@ int cmd_main(int argc, const char **argv)
 		return 1;
 	}
 
-	options.verbosity = 1;
-	options.progress = !!isatty(2);
-	options.thin = 1;
-	string_list_init_dup(&options.deepen_not);
-	string_list_init_dup(&options.push_options);
+	__options.verbosity = 1;
+	__options.progress = !!isatty(2);
+	__options.thin = 1;
+	string_list_init_dup(&__options.deepen_not);
+	string_list_init_dup(&__options.push_options);
 
 	/*
 	 * Just report "remote-curl" here (folding all the various aliases

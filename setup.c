@@ -410,19 +410,31 @@ int is_git_directory(const char *suspect)
 
 	/* Check non-worktree-related signatures */
 	if (getenv(DB_ENVIRONMENT)) {
+#ifdef __VSF__
+		if (access(getenv(DB_ENVIRONMENT), F_OK))
+#else
 		if (access(getenv(DB_ENVIRONMENT), X_OK))
+#endif
 			goto done;
 	}
 	else {
 		strbuf_setlen(&path, len);
 		strbuf_addstr(&path, "/objects");
+#ifdef __VSF__
+		if (access(path.buf, F_OK))
+#else
 		if (access(path.buf, X_OK))
+#endif
 			goto done;
 	}
 
 	strbuf_setlen(&path, len);
 	strbuf_addstr(&path, "/refs");
+#ifdef __VSF__
+	if (access(path.buf, F_OK))
+#else
 	if (access(path.buf, X_OK))
+#endif
 		goto done;
 
 	ret = 1;
