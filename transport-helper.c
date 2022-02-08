@@ -15,7 +15,28 @@
 #include "transport-internal.h"
 #include "protocol.h"
 
+#ifdef __VSF__
+struct __git_transport_helper_ctx_t {
+	int __debug;
+	struct {
+		int __debug_enabled;
+	} transfer_debug;
+};
+static void __git_transport_helper_mod_init(void *ctx)
+{
+	struct __git_transport_helper_ctx_t *__git_transport_helper_ctx = ctx;
+	__git_transport_helper_ctx->transfer_debug.__debug_enabled = -1;
+}
+define_vsf_git_mod(git_transport_helper,
+	sizeof(struct __git_transport_helper_ctx_t),
+	GIT_MOD_TRANSPORT_HELPER,
+	__git_transport_helper_mod_init
+)
+#	define git_transport_helper_ctx	((struct __git_transport_helper_ctx_t *)vsf_git_ctx(git_transport_helper))
+#	define debug					(git_transport_helper_ctx->__debug)
+#else
 static int debug;
+#endif
 
 struct helper_data {
 	const char *name;
@@ -1264,7 +1285,7 @@ static struct ref *get_refs_list_using_list(struct transport *transport,
 	return ret;
 }
 
-static struct transport_vtable vtable = {
+static const struct transport_vtable vtable = {
 	.set_option	= set_helper_option,
 	.get_refs_list	= get_refs_list,
 	.fetch_refs	= fetch_refs,
@@ -1310,12 +1331,20 @@ static void transfer_debug(const char *fmt, ...)
 
 	va_list args;
 	char msgbuf[PBUFFERSIZE];
+#ifdef __VSF__
+#	define debug_enabled			(git_transport_helper_ctx->transfer_debug.__debug_enabled)
+#else
 	static int debug_enabled = -1;
+#endif
 
 	if (debug_enabled < 0)
 		debug_enabled = getenv("GIT_TRANSLOOP_DEBUG") ? 1 : 0;
 	if (!debug_enabled)
 		return;
+
+#ifdef __VSF__
+#	undef debug_enabled
+#endif
 
 	va_start(args, fmt);
 	vsnprintf(msgbuf, PBUFFERSIZE, fmt, args);
