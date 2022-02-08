@@ -15,9 +15,25 @@
 #include "promisor-remote.h"
 
 /* The main repository */
+#ifdef __VSF__
+define_vsf_git_mod(git_repository_public,
+	sizeof(struct __git_repository_public_ctx_t),
+	GIT_MOD_REPOSITORY_PUBLIC,
+	NULL
+)
+
+define_vsf_git_mod(git_repository,
+	sizeof(struct __git_repository_ctx_t),
+	GIT_MOD_REPOSITORY,
+	NULL
+)
+#	define git_repository_ctx		((struct __git_repository_ctx_t *)vsf_git_ctx(git_repository))
+#	define the_repo					(git_repository_ctx->__the_repo)
+#else
 static struct repository the_repo;
 struct repository *the_repository;
 struct index_state the_index;
+#endif
 
 void initialize_the_repository(void)
 {

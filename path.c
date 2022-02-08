@@ -14,6 +14,46 @@
 #include "lockfile.h"
 #include "exec-cmd.h"
 
+#ifdef __VSF__
+struct __git_path_ctx_t {
+	struct {
+		struct strbuf __pathname_array[4];
+		int __index;
+	} get_pathname;
+	struct trie {
+		struct trie *children[256];
+		int len;
+		char *contents;
+		void *value;
+	} __common_trie;
+	int __common_trie_done_setup;
+	struct {
+		struct strbuf __validated_path;	// = STRBUF_INIT;
+		struct strbuf __used_path;		// = STRBUF_INIT;
+	} enter_repo;
+	struct {
+		struct strbuf __buf;			// = STRBUF_INIT;
+	} remove_leading_path;
+};
+static void __git_path_mod_init(void *ctx)
+{
+	struct __git_path_ctx_t *__git_path_ctx = ctx;
+	__git_path_ctx->get_pathname.__pathname_array[0] = STRBUF_INIT;
+	__git_path_ctx->get_pathname.__pathname_array[1] = STRBUF_INIT;
+	__git_path_ctx->get_pathname.__pathname_array[2] = STRBUF_INIT;
+	__git_path_ctx->get_pathname.__pathname_array[3] = STRBUF_INIT;
+	__git_path_ctx->enter_repo.__used_path = STRBUF_INIT;
+	__git_path_ctx->enter_repo.__validated_path = STRBUF_INIT;
+	__git_path_ctx->remove_leading_path.__buf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_path,
+	sizeof(struct __git_path_ctx_t),
+	GIT_MOD_PATH,
+	__git_path_mod_init
+)
+#	define git_path_ctx				((struct __git_path_ctx_t *)vsf_git_ctx(git_path))
+#endif
+
 static int get_st_mode_bits(const char *path, int *mode)
 {
 	struct stat st;
@@ -23,18 +63,27 @@ static int get_st_mode_bits(const char *path, int *mode)
 	return 0;
 }
 
-static char bad_path[] = "/bad-path/";
+static const char bad_path[] = "/bad-path/";
 
 static struct strbuf *get_pathname(void)
 {
+#ifdef __VSF__
+#	define pathname_array			(git_path_ctx->get_pathname.__pathname_array)
+#	define index					(git_path_ctx->get_pathname.__index)
+#else
 	static struct strbuf pathname_array[4] = {
 		STRBUF_INIT, STRBUF_INIT, STRBUF_INIT, STRBUF_INIT
 	};
 	static int index;
+#endif
 	struct strbuf *sb = &pathname_array[index];
 	index = (index + 1) % ARRAY_SIZE(pathname_array);
 	strbuf_reset(sb);
 	return sb;
+#ifdef __VSF__
+#	undef pathname_array
+#	undef index
+#endif
 }
 
 static const char *cleanup_path(const char *path)
@@ -108,7 +157,7 @@ struct common_dir {
 	const char *path;
 };
 
-static struct common_dir common_list[] = {
+static const struct common_dir common_list[] = {
 	{ 0, 1, 1, "branches" },
 	{ 0, 1, 1, "common" },
 	{ 0, 1, 1, "hooks" },
@@ -156,12 +205,14 @@ static struct common_dir common_list[] = {
  *           i: len = 2, contents = on, children all NULL,
  *              value = (data for "definition")
  */
+#ifndef __VSF__
 struct trie {
 	struct trie *children[256];
 	int len;
 	char *contents;
 	void *value;
 };
+#endif
 
 static struct trie *make_trie_node(const char *key, void *value)
 {
@@ -327,8 +378,13 @@ static int trie_find(struct trie *root, const char *key, match_fn fn,
 		return -1;
 }
 
+#ifdef __VSF__
+#	define common_trie				(git_path_ctx->__common_trie)
+#	define common_trie_done_setup	(git_path_ctx->__common_trie_done_setup)
+#else
 static struct trie common_trie;
 static int common_trie_done_setup;
+#endif
 
 static void init_common_trie(void)
 {
@@ -790,8 +846,13 @@ return_null:
  */
 const char *enter_repo(const char *path, int strict)
 {
+#ifdef __VSF__
+#	define validated_path			(git_path_ctx->enter_repo.__validated_path)
+#	define used_path				(git_path_ctx->enter_repo.__used_path)
+#else
 	static struct strbuf validated_path = STRBUF_INIT;
 	static struct strbuf used_path = STRBUF_INIT;
+#endif
 
 	if (!path)
 		return NULL;
@@ -863,6 +924,10 @@ const char *enter_repo(const char *path, int strict)
 	}
 
 	return NULL;
+#ifdef __VSF__
+#	undef validated_path
+#	undef used_path
+#endif
 }
 
 static int calc_shared_perm(int mode)
@@ -1044,7 +1109,11 @@ const char *relative_path(const char *in, const char *prefix,
  */
 const char *remove_leading_path(const char *in, const char *prefix)
 {
-	static struct strbuf buf = STRBUF_INIT;
+#ifdef __VSF__
+#	define __buf					(git_path_ctx->remove_leading_path.__buf)
+#else
+	static struct strbuf __buf = STRBUF_INIT;
+#endif
 	int i = 0, j = 0;
 
 	if (!prefix || !prefix[0])
@@ -1074,12 +1143,15 @@ const char *remove_leading_path(const char *in, const char *prefix)
 	while (is_dir_sep(in[j]))
 		j++;
 
-	strbuf_reset(&buf);
+	strbuf_reset(&__buf);
 	if (!in[j])
-		strbuf_addstr(&buf, ".");
+		strbuf_addstr(&__buf, ".");
 	else
-		strbuf_addstr(&buf, in + j);
-	return buf.buf;
+		strbuf_addstr(&__buf, in + j);
+	return __buf.buf;
+#ifdef __VSF__
+#	undef __buf
+#endif
 }
 
 /*

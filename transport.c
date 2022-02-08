@@ -23,11 +23,45 @@
 #include "object-store.h"
 #include "color.h"
 
+#ifdef __VSF__
+struct __git_transport_ctx_t {
+	int __transport_use_color;		// = -1;
+	char __transport_colors[2][COLOR_MAXLEN];
+	struct {
+		int __initialized;
+	} transport_color_config;
+	struct {
+		int __enabled;				// = -1;
+		struct string_list __allowed;	// = STRING_LIST_INIT_DUP;
+	} protocol_whitelist;
+};
+static void __git_transport_mod_init(void *ctx)
+{
+    struct __git_transport_ctx_t *__git_transport_ctx = ctx;
+    __git_transport_ctx->__transport_use_color = -1;
+    __git_transport_ctx->protocol_whitelist.__enabled = -1;
+    __git_transport_ctx->protocol_whitelist.__allowed = STRING_LIST_INIT_DUP;
+char __transport_colors[][COLOR_MAXLEN] = {
+	GIT_COLOR_RESET,
+	GIT_COLOR_RED
+};
+	memcpy(__git_transport_ctx->__transport_colors, __transport_colors, sizeof(__transport_colors));
+}
+define_vsf_git_mod(git_transport,
+	sizeof(struct __git_transport_ctx_t),
+	GIT_MOD_TRANSPORT,
+	__git_transport_mod_init
+)
+#	define git_transport_ctx		((struct __git_transport_ctx_t *)vsf_git_ctx(git_transport))
+#	define transport_use_color		(git_transport_ctx->__transport_use_color)
+#	define transport_colors			(git_transport_ctx->__transport_colors)
+#else
 static int transport_use_color = -1;
 static char transport_colors[][COLOR_MAXLEN] = {
 	GIT_COLOR_RESET,
 	GIT_COLOR_RED		/* REJECTED */
 };
+#endif
 
 enum color_transport {
 	TRANSPORT_COLOR_RESET = 0,
@@ -42,11 +76,18 @@ static int transport_color_config(void)
 	}, *key = "color.transport";
 	char *value;
 	int i;
+#ifdef __VSF__
+#	define initialized				(git_transport_ctx->transport_color_config.__initialized)
+#else
 	static int initialized;
+#endif
 
 	if (initialized)
 		return 0;
 	initialized = 1;
+#ifdef __VSF__
+#	undef initialized
+#endif
 
 	if (!git_config_get_string(key, &value))
 		transport_use_color = git_config_colorbool(key, value);
@@ -886,7 +927,7 @@ static int disconnect_git(struct transport *transport)
 	return 0;
 }
 
-static struct transport_vtable taken_over_vtable = {
+static const struct transport_vtable taken_over_vtable = {
 	.get_refs_list	= get_refs_via_connect,
 	.fetch_refs	= fetch_refs_via_pack,
 	.push_refs	= git_transport_push,
@@ -931,8 +972,13 @@ static int external_specification_len(const char *url)
 
 static const struct string_list *protocol_whitelist(void)
 {
+#ifdef __VSF__
+#	define enabled					(git_transport_ctx->protocol_whitelist.__enabled)
+#	define allowed					(git_transport_ctx->protocol_whitelist.__allowed)
+#else
 	static int enabled = -1;
 	static struct string_list allowed = STRING_LIST_INIT_DUP;
+#endif
 
 	if (enabled < 0) {
 		const char *v = getenv("GIT_ALLOW_PROTOCOL");
@@ -946,6 +992,10 @@ static const struct string_list *protocol_whitelist(void)
 	}
 
 	return enabled ? &allowed : NULL;
+#ifdef __VSF__
+#	undef enabled
+#	undef allowed
+#endif
 }
 
 enum protocol_allow_config {
@@ -1033,13 +1083,13 @@ void transport_check_allowed(const char *type)
 		die(_("transport '%s' not allowed"), type);
 }
 
-static struct transport_vtable bundle_vtable = {
+static const struct transport_vtable bundle_vtable = {
 	.get_refs_list	= get_refs_from_bundle,
 	.fetch_refs	= fetch_refs_from_bundle,
 	.disconnect	= close_bundle
 };
 
-static struct transport_vtable builtin_smart_vtable = {
+static const struct transport_vtable builtin_smart_vtable = {
 	.get_refs_list	= get_refs_via_connect,
 	.fetch_refs	= fetch_refs_via_pack,
 	.push_refs	= git_transport_push,

@@ -77,7 +77,7 @@ struct __git_builtin_clone_ctx_t {
 	struct list_objects_filter_options __filter_options;
 	struct string_list ____server_options;			// = STRING_LIST_INIT_NODUP;
 	int __option_remote_submodules;
-	struct option __builtin_clone_options[35];
+	struct option __builtin_clone_options[36];
 	const char *__junk_work_tree;
 	int __junk_work_tree_flags;
 	const char *__junk_git_dir;
@@ -264,7 +264,10 @@ static struct option builtin_clone_options[] = {
 	OPT_END()
 };
 #ifdef __VSF__
-	VSF_LINUX_ASSERT(dimof(__builtin_clone_options) <= dimof(__git_builtin_clone_ctx->__builtin_clone_options));
+	if (!(dimof(__builtin_clone_options) <= dimof(__git_builtin_clone_ctx->__builtin_clone_options))) {
+		vsf_trace_error("__builtin_clone_options MUST be >= %d\n", dimof(__builtin_clone_options));
+		VSF_LINUX_ASSERT(false);
+	}
 	memcpy(__git_builtin_clone_ctx->__builtin_clone_options, __builtin_clone_options, sizeof(__builtin_clone_options));
 }
 #endif

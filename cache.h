@@ -550,7 +550,16 @@ void prefetch_cache_entries(const struct index_state *istate,
 			    must_prefetch_predicate must_prefetch);
 
 #ifdef USE_THE_INDEX_COMPATIBILITY_MACROS
+#ifdef __VSF__
+struct __git_repository_public_ctx_t {
+	struct index_state __the_index;
+};
+declare_vsf_git_mod(git_repository_public)
+#	define git_repository_public_ctx	((struct __git_repository_public_ctx_t *)vsf_git_ctx(git_repository_public))
+#	define the_index					(git_repository_public_ctx->__the_index)
+#else
 extern struct index_state the_index;
+#endif
 
 #define active_cache (the_index.cache)
 #define active_nr (the_index.cache_nr)

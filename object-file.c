@@ -213,6 +213,76 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
 	}
 };
 
+#ifdef __VSF__
+struct __git_object_file_ctx_t {
+	struct {
+		char __buf[GIT_MAX_HEXSZ + 1];
+	} empty_tree_oid_hex;
+	struct {
+		char __buf[GIT_MAX_HEXSZ + 1];
+	} empty_blob_oid_hex;
+	struct cached_object {
+		struct object_id oid;
+		enum object_type type;
+		void *buf;
+		unsigned long size;
+	} *__cached_objects;
+	int __cached_object_nr, __cached_object_alloc;
+	struct cached_object ____empty_tree;
+	struct {
+		struct strbuf __path;		// = STRBUF_INIT;
+	} check_and_freshen_odb;
+	struct {
+		size_t __limit;
+	} mmap_limit_check;
+	struct {
+		int __o_cloexec;			// = O_CLOEXEC;
+#if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
+		int __fd_cloexec;			// = FD_CLOEXEC;
+#endif
+	} git_open_cloexec;
+	struct {
+		struct strbuf __buf;		// = STRBUF_INIT;
+	} stat_loose_object;
+	struct {
+		struct strbuf __buf;		// = STRBUF_INIT;
+	} open_loose_object;
+	struct {
+		struct object_info __blank_oi;	// = OBJECT_INFO_INIT;
+	} do_oid_object_info_extended;
+	struct {
+		struct strbuf __tmp_file;	// = STRBUF_INIT;
+		struct strbuf __filename;	// = STRBUF_INIT;
+	} write_loose_object;
+};
+static void __git_object_file_mod_init(void *ctx)
+{
+	struct __git_object_file_ctx_t *__git_object_file_ctx = ctx;
+	__git_object_file_ctx->stat_loose_object.__buf = STRBUF_INIT;
+	__git_object_file_ctx->open_loose_object.__buf = STRBUF_INIT;
+	__git_object_file_ctx->check_and_freshen_odb.__path = STRBUF_INIT;
+	__git_object_file_ctx->git_open_cloexec.__o_cloexec = O_CLOEXEC;
+	__git_object_file_ctx->do_oid_object_info_extended.__blank_oi = OBJECT_INFO_INIT;
+	__git_object_file_ctx->write_loose_object.__tmp_file = STRBUF_INIT;
+	__git_object_file_ctx->write_loose_object.__filename = STRBUF_INIT;
+#if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
+	__git_object_file_ctx->git_open_cloexec.__fd_cloexec = FD_CLOEXEC;
+#endif
+	__git_object_file_ctx->____empty_tree = (struct cached_object) {
+		{ EMPTY_TREE_SHA1_BIN_LITERAL },
+		OBJ_TREE,
+		"",
+		0
+	};
+}
+define_vsf_git_mod(git_object_file,
+	sizeof(struct __git_object_file_ctx_t),
+	GIT_MOD_OBJECT_FILE,
+	__git_object_file_mod_init
+)
+#	define git_object_file_ctx		((struct __git_object_file_ctx_t *)vsf_git_ctx(git_object_file))
+#endif
+
 const struct object_id *null_oid(void)
 {
 	return the_hash_algo->null_oid;
@@ -220,14 +290,28 @@ const struct object_id *null_oid(void)
 
 const char *empty_tree_oid_hex(void)
 {
+#ifdef __VSF__
+#	define buf						(git_object_file_ctx->empty_tree_oid_hex.__buf)
+#else
 	static char buf[GIT_MAX_HEXSZ + 1];
+#endif
 	return oid_to_hex_r(buf, the_hash_algo->empty_tree);
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
 const char *empty_blob_oid_hex(void)
 {
+#ifdef __VSF__
+#	define buf						(git_object_file_ctx->empty_blob_oid_hex.__buf)
+#else
 	static char buf[GIT_MAX_HEXSZ + 1];
+#endif
 	return oid_to_hex_r(buf, the_hash_algo->empty_blob);
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
 int hash_algo_by_name(const char *name)
@@ -265,6 +349,12 @@ int hash_algo_by_length(int len)
  * to write them into the object store (e.g. a browse-only
  * application).
  */
+#ifdef __VSF__
+#	define cached_objects			(git_object_file_ctx->__cached_objects)
+#	define cached_object_nr			(git_object_file_ctx->__cached_object_nr)
+#	define cached_object_alloc		(git_object_file_ctx->__cached_object_alloc)
+#	define __empty_tree				(git_object_file_ctx->____empty_tree)
+#else
 static struct cached_object {
 	struct object_id oid;
 	enum object_type type;
@@ -273,12 +363,13 @@ static struct cached_object {
 } *cached_objects;
 static int cached_object_nr, cached_object_alloc;
 
-static struct cached_object empty_tree = {
+static struct cached_object __empty_tree = {
 	{ EMPTY_TREE_SHA1_BIN_LITERAL },
 	OBJ_TREE,
 	"",
 	0
 };
+#endif
 
 static struct cached_object *find_cached_object(const struct object_id *oid)
 {
@@ -290,7 +381,7 @@ static struct cached_object *find_cached_object(const struct object_id *oid)
 			return co;
 	}
 	if (oideq(oid, the_hash_algo->empty_tree))
-		return &empty_tree;
+		return &__empty_tree;
 	return NULL;
 }
 
@@ -416,7 +507,7 @@ static void fill_loose_path(struct strbuf *buf, const struct object_id *oid)
 {
 	int i;
 	for (i = 0; i < the_hash_algo->rawsz; i++) {
-		static char hex[] = "0123456789abcdef";
+		static const char hex[] = "0123456789abcdef";
 		unsigned int val = oid->hash[i];
 		strbuf_addch(buf, hex[val >> 4]);
 		strbuf_addch(buf, hex[val & 0xf]);
@@ -963,9 +1054,16 @@ static int check_and_freshen_odb(struct object_directory *odb,
 				 const struct object_id *oid,
 				 int freshen)
 {
+#ifdef __VSF__
+#	define path						(git_object_file_ctx->check_and_freshen_odb.__path)
+#else
 	static struct strbuf path = STRBUF_INIT;
+#endif
 	odb_loose_path(odb, &path, oid);
 	return check_and_freshen_file(path.buf, freshen);
+#ifdef __VSF__
+#	undef path
+#endif
 }
 
 static int check_and_freshen_local(const struct object_id *oid, int freshen)
@@ -1003,7 +1101,11 @@ static int has_loose_object(const struct object_id *oid)
 
 static void mmap_limit_check(size_t length)
 {
+#ifdef __VSF__
+#	define limit					(git_object_file_ctx->mmap_limit_check.__limit)
+#else
 	static size_t limit = 0;
+#endif
 	if (!limit) {
 		limit = git_env_ulong("GIT_MMAP_LIMIT", 0);
 		if (!limit)
@@ -1012,6 +1114,9 @@ static void mmap_limit_check(size_t length)
 	if (length > limit)
 		die(_("attempting to mmap %"PRIuMAX" over limit %"PRIuMAX),
 		    (uintmax_t)length, (uintmax_t)limit);
+#ifdef __VSF__
+#	undef limit
+#endif
 }
 
 void *xmmap_gently(void *start, size_t length,
@@ -1102,7 +1207,11 @@ int check_object_signature(struct repository *r, const struct object_id *oid,
 int git_open_cloexec(const char *name, int flags)
 {
 	int fd;
+#ifdef __VSF__
+#	define o_cloexec				(git_object_file_ctx->git_open_cloexec.__o_cloexec)
+#else
 	static int o_cloexec = O_CLOEXEC;
+#endif
 
 	fd = open(name, flags | o_cloexec);
 	if ((o_cloexec & O_CLOEXEC) && fd < 0 && errno == EINVAL) {
@@ -1113,7 +1222,11 @@ int git_open_cloexec(const char *name, int flags)
 
 #if defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 	{
+#ifdef __VSF__
+#	define fd_cloexec				(git_object_file_ctx->git_open_cloexec.__fd_cloexec)
+#else
 		static int fd_cloexec = FD_CLOEXEC;
+#endif
 
 		if (!o_cloexec && 0 <= fd && fd_cloexec) {
 			/* Opened w/o O_CLOEXEC?  try with fcntl(2) to add it */
@@ -1121,9 +1234,15 @@ int git_open_cloexec(const char *name, int flags)
 			if (fcntl(fd, F_SETFD, flags | fd_cloexec))
 				fd_cloexec = 0;
 		}
+#ifdef __VSF__
+#	undef fd_cloexec
+#endif
 	}
 #endif
 	return fd;
+#ifdef __VSF__
+#	undef o_cloexec
+#endif
 }
 
 /*
@@ -1138,7 +1257,11 @@ static int stat_loose_object(struct repository *r, const struct object_id *oid,
 			     struct stat *st, const char **path)
 {
 	struct object_directory *odb;
+#ifdef __VSF__
+#	define buf						(git_object_file_ctx->stat_loose_object.__buf)
+#else
 	static struct strbuf buf = STRBUF_INIT;
+#endif
 
 	prepare_alt_odb(r);
 	for (odb = r->objects->odb; odb; odb = odb->next) {
@@ -1148,6 +1271,9 @@ static int stat_loose_object(struct repository *r, const struct object_id *oid,
 	}
 
 	return -1;
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
 /*
@@ -1160,7 +1286,11 @@ static int open_loose_object(struct repository *r,
 	int fd;
 	struct object_directory *odb;
 	int most_interesting_errno = ENOENT;
+#ifdef __VSF__
+#	define buf						(git_object_file_ctx->open_loose_object.__buf)
+#else
 	static struct strbuf buf = STRBUF_INIT;
+#endif
 
 	prepare_alt_odb(r);
 	for (odb = r->objects->odb; odb; odb = odb->next) {
@@ -1174,6 +1304,9 @@ static int open_loose_object(struct repository *r,
 	}
 	errno = most_interesting_errno;
 	return -1;
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
 static int quick_has_loose(struct repository *r,
@@ -1528,7 +1661,11 @@ static int do_oid_object_info_extended(struct repository *r,
 				       const struct object_id *oid,
 				       struct object_info *oi, unsigned flags)
 {
+#ifdef __VSF__
+#	define blank_oi					(git_object_file_ctx->do_oid_object_info_extended.__blank_oi)
+#else
 	static struct object_info blank_oi = OBJECT_INFO_INIT;
+#endif
 	struct cached_object *co;
 	struct pack_entry e;
 	int rtype;
@@ -1626,6 +1763,9 @@ static int do_oid_object_info_extended(struct repository *r,
 	}
 
 	return 0;
+#ifdef __VSF__
+#	undef blank_oi
+#endif
 }
 
 int oid_object_info_extended(struct repository *r, const struct object_id *oid,
@@ -1925,8 +2065,13 @@ static int write_loose_object(const struct object_id *oid, char *hdr,
 	git_zstream stream;
 	git_hash_ctx c;
 	struct object_id parano_oid;
+#ifdef __VSF__
+#	define tmp_file					(git_object_file_ctx->write_loose_object.__tmp_file)
+#	define filename					(git_object_file_ctx->write_loose_object.__filename)
+#else
 	static struct strbuf tmp_file = STRBUF_INIT;
 	static struct strbuf filename = STRBUF_INIT;
+#endif
 
 	loose_object_path(the_repository, &filename, oid);
 
@@ -1990,6 +2135,10 @@ static int write_loose_object(const struct object_id *oid, char *hdr,
 	}
 
 	return finalize_object_file(tmp_file.buf, filename.buf);
+#ifdef __VSF__
+#	undef tmp_file
+#	undef filename
+#endif
 }
 
 static int freshen_loose_object(const struct object_id *oid)

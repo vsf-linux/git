@@ -6,7 +6,28 @@
 #include "color.h"
 #include "utf8.h"
 
+#ifdef __VSF__
+struct __git_parse_options_ctx_t {
+	int __disallow_abbreviated_options;
+	struct {
+		struct strbuf __sb;				// = STRBUF_INIT;
+	} optname;
+};
+static void __git_parse_options_mod_init(void *ctx)
+{
+	struct __git_parse_options_ctx_t *__git_parse_options_ctx = ctx;
+	__git_parse_options_ctx->optname.__sb = STRBUF_INIT;
+}
+define_vsf_git_mod(git_parse_options,
+	sizeof(struct __git_parse_options_ctx_t),
+	GIT_MOD_PARSE_OPTIONS,
+	__git_parse_options_mod_init
+)
+#	define git_parse_options_ctx		((struct __git_parse_options_ctx_t *)vsf_git_ctx(git_parse_options))
+#	define disallow_abbreviated_options	(git_parse_options_ctx->__disallow_abbreviated_options)
+#else
 static int disallow_abbreviated_options;
+#endif
 
 enum opt_parsed {
 	OPT_LONG  = 0,
@@ -27,7 +48,11 @@ static int optbug(const struct option *opt, const char *reason)
 
 static const char *optname(const struct option *opt, enum opt_parsed flags)
 {
+#ifdef __VSF__
+#	define sb							(git_parse_options_ctx->optname.__sb)
+#else
 	static struct strbuf sb = STRBUF_INIT;
+#endif
 
 	strbuf_reset(&sb);
 	if (flags & OPT_SHORT)
@@ -40,6 +65,9 @@ static const char *optname(const struct option *opt, enum opt_parsed flags)
 		BUG("optname() got unknown flags %d", flags);
 
 	return sb.buf;
+#ifdef __VSF__
+#	undef sb
+#endif
 }
 
 static enum parse_opt_result get_arg(struct parse_opt_ctx_t *p,

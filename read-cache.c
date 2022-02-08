@@ -73,6 +73,36 @@ enum index_search_mode {
 	EXPAND_SPARSE = 1
 };
 
+#ifdef __VSF__
+struct __git_read_cache_ctx_t {
+	const char *__alternate_index_output;
+	int __default_max_percent_split_change;		// = 20;
+	struct {
+		int __allow;				// = -1;
+	} do_write_index;
+	struct {
+		unsigned long __shared_index_expire_date;
+		int __shared_index_expire_date_prepared;
+	} get_shared_index_expire_date;
+	struct {
+		int __validate_index_cache_entries;		// = -1;
+	} should_validate_cache_entries;
+};
+static void __git_read_cache_mod_init(void *ctx)
+{
+	struct __git_read_cache_ctx_t *__git_read_cache_ctx = ctx;
+	__git_read_cache_ctx->do_write_index.__allow = -1;
+	__git_read_cache_ctx->__default_max_percent_split_change = 20;
+	__git_read_cache_ctx->should_validate_cache_entries.__validate_index_cache_entries = -1;
+}
+define_vsf_git_mod(git_read_cache,
+	sizeof(struct __git_read_cache_ctx_t),
+	GIT_MOD_READ_CACHE,
+	__git_read_cache_mod_init
+)
+#	define git_read_cache_ctx		((struct __git_read_cache_ctx_t *)vsf_git_ctx(git_read_cache))
+#endif
+
 static inline struct cache_entry *mem_pool__ce_alloc(struct mem_pool *mem_pool, size_t len)
 {
 	struct cache_entry *ce;
@@ -106,7 +136,11 @@ static struct mem_pool *find_mem_pool(struct index_state *istate)
 	return *pool_ptr;
 }
 
+#ifdef __VSF__
+#	define alternate_index_output	(git_read_cache_ctx->__alternate_index_output)
+#else
 static const char *alternate_index_output;
+#endif
 
 static void set_index_entry(struct index_state *istate, int nr, struct cache_entry *ce)
 {
@@ -2694,7 +2728,7 @@ static int ce_write_entry(struct hashfile *f, struct cache_entry *ce,
 	int size;
 	unsigned int saved_namelen;
 	int stripped_name = 0;
-	static unsigned char padding[8] = { 0x00 };
+	static const unsigned char padding[8] = { 0x00 };
 
 	if (ce->ce_flags & CE_STRIP_NAME) {
 		saved_namelen = ce_namelen(ce);
@@ -2938,7 +2972,11 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 			ce_smudge_racily_clean_entry(istate, ce);
 		if (is_null_oid(&ce->oid)) {
 			static const char msg[] = "cache entry has null sha1: %s";
+#ifdef __VSF__
+#	define allow					(git_read_cache_ctx->do_write_index.__allow)
+#else
 			static int allow = -1;
+#endif
 
 			if (allow < 0)
 				allow = git_env_bool("GIT_ALLOW_NULL_SHA1", 0);
@@ -2948,6 +2986,9 @@ static int do_write_index(struct index_state *istate, struct tempfile *tempfile,
 				err = error(msg, ce->name);
 
 			drop_cache_tree = 1;
+#ifdef __VSF__
+#	undef allow
+#endif
 		}
 		if (ieot && i && (i % ieot_entries == 0)) {
 			ieot->entries[ieot->nr].nr = nr;
@@ -3182,8 +3223,13 @@ static const char *shared_index_expire = "2.weeks.ago";
 
 static unsigned long get_shared_index_expire_date(void)
 {
+#ifdef __VSF__
+#	define shared_index_expire_date	(git_read_cache_ctx->get_shared_index_expire_date.__shared_index_expire_date)
+#	define shared_index_expire_date_prepared	(git_read_cache_ctx->get_shared_index_expire_date.__shared_index_expire_date_prepared)
+#else
 	static unsigned long shared_index_expire_date;
 	static int shared_index_expire_date_prepared;
+#endif
 
 	if (!shared_index_expire_date_prepared) {
 		git_config_get_expiry("splitindex.sharedindexexpire",
@@ -3193,6 +3239,10 @@ static unsigned long get_shared_index_expire_date(void)
 	}
 
 	return shared_index_expire_date;
+#ifdef __VSF__
+#	undef shared_index_expire_date
+#	undef shared_index_expire_date_prepared
+#endif
 }
 
 static int should_delete_shared_index(const char *shared_index_path)
@@ -3272,7 +3322,11 @@ static int write_shared_index(struct index_state *istate,
 	return ret;
 }
 
+#ifdef __VSF__
+#	define default_max_percent_split_change	(git_read_cache_ctx->__default_max_percent_split_change)
+#else
 static const int default_max_percent_split_change = 20;
+#endif
 
 static int too_many_not_shared_entries(struct index_state *istate)
 {
@@ -3548,7 +3602,11 @@ void discard_cache_entry(struct cache_entry *ce)
 
 int should_validate_cache_entries(void)
 {
+#ifdef __VSF__
+#	define validate_index_cache_entries	(git_read_cache_ctx->should_validate_cache_entries.__validate_index_cache_entries)
+#else
 	static int validate_index_cache_entries = -1;
+#endif
 
 	if (validate_index_cache_entries < 0) {
 		if (getenv("GIT_TEST_VALIDATE_INDEX_CACHE_ENTRIES"))
@@ -3558,6 +3616,9 @@ int should_validate_cache_entries(void)
 	}
 
 	return validate_index_cache_entries;
+#ifdef __VSF__
+#	undef validate_index_cache_entries
+#endif
 }
 
 #define EOIE_SIZE (4 + GIT_SHA1_RAWSZ) /* <4-byte offset> + <20-byte hash> */

@@ -150,7 +150,18 @@ struct repository {
 	unsigned different_commondir:1;
 };
 
+#ifdef __VSF__
+struct __git_repository_ctx_t {
+	struct repository __the_repo;
+	struct repository *__the_repository;
+//	struct index_state __the_index;
+};
+declare_vsf_git_mod(git_repository)
+#	define git_repository_ctx	((struct __git_repository_ctx_t *)vsf_git_ctx(git_repository))
+#	define the_repository		(git_repository_ctx->__the_repository)
+#else
 extern struct repository *the_repository;
+#endif
 
 /*
  * Define a custom repository layout. Any field can be NULL, which

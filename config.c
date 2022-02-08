@@ -48,6 +48,26 @@ struct config_source {
 	long (*do_ftell)(struct config_source *c);
 };
 
+#ifdef __VSF__
+struct __git_config_ctx_t {
+	struct config_source *__cf;
+	struct key_value_info *__current_config_kvi;
+	enum config_scope __current_parsing_scope;
+	int __pack_compression_seen;
+	int __zlib_compression_seen;
+};
+define_vsf_git_mod(git_config,
+	sizeof(struct __git_config_ctx_t),
+	GIT_MOD_CONFIG,
+	NULL
+)
+#	define git_config_ctx			((struct __git_config_ctx_t *)vsf_git_ctx(git_config))
+#	define cf						(git_config_ctx->__cf)
+#	define current_config_kvi		(git_config_ctx->__current_config_kvi)
+#	define current_parsing_scope	(git_config_ctx->__current_parsing_scope)
+#	define pack_compression_seen	(git_config_ctx->__pack_compression_seen)
+#	define zlib_compression_seen	(git_config_ctx->__zlib_compression_seen)
+#else
 /*
  * These variables record the "current" config source, which
  * can be accessed by parsing callbacks.
@@ -78,6 +98,7 @@ static enum config_scope current_parsing_scope;
 
 static int pack_compression_seen;
 static int zlib_compression_seen;
+#endif
 
 static int config_file_fgetc(struct config_source *conf)
 {

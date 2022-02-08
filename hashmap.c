@@ -7,6 +7,20 @@
 #define FNV32_BASE ((unsigned int) 0x811c9dc5)
 #define FNV32_PRIME ((unsigned int) 0x01000193)
 
+#ifdef __VSF__
+struct __git_hashmap_ctx_t {
+	struct {
+		struct hashmap __map;
+	} memintern;
+};
+define_vsf_git_mod(git_hashmap,
+	sizeof(struct __git_hashmap_ctx_t),
+	GIT_MOD_HASHMAP,
+	NULL
+)
+#	define git_hashmap_ctx			((struct __git_hashmap_ctx_t *)vsf_git_ctx(git_hashmap))
+#endif
+
 unsigned int strhash(const char *str)
 {
 	unsigned int c, hash = FNV32_BASE;
@@ -329,7 +343,11 @@ static int pool_entry_cmp(const void *unused_cmp_data,
 
 const void *memintern(const void *data, size_t len)
 {
+#ifdef __VSF__
+#	define map						(git_hashmap_ctx->memintern.__map)
+#else
 	static struct hashmap map;
+#endif
 	struct pool_entry key, *e;
 
 	/* initialize string pool hashmap */
@@ -348,4 +366,7 @@ const void *memintern(const void *data, size_t len)
 		hashmap_add(&map, &e->ent);
 	}
 	return e->data;
+#ifdef __VSF__
+#	undef map
+#endif
 }
