@@ -12,9 +12,38 @@ struct credential_cache_entry {
 	struct credential item;
 	timestamp_t expiration;
 };
+#ifdef __VSF__
+struct __git_builtin_credential_cache_daemon_ctx_t {
+	struct credential_cache_entry *__entries;
+	int __entries_nr;
+	int __entries_alloc;
+	struct {
+		timestamp_t __wait_for_entry_until;
+	} check_expirations;
+	struct {
+		struct strbuf __item;	// = STRBUF_INIT;
+	} read_request;
+};
+static void __git_builtin_credential_cache_daemon_mod_init(void *ctx)
+{
+	struct __git_builtin_credential_cache_daemon_ctx_t *__git_builtin_credential_cache_daemon_ctx = ctx;
+	__git_builtin_credential_cache_daemon_ctx->read_request.__item = STRBUF_INIT;
+}
+define_vsf_git_mod(git_builtin_credential_cache_daemon,
+	sizeof(struct __git_builtin_credential_cache_daemon_ctx_t),
+	GIT_MOD_BUILTIN_CREDENTIAL_CACHE_DAEMON,
+	__git_builtin_credential_cache_daemon_mod_init
+)
+#	define git_builtin_credential_cache_daemon_ctx		\
+		((struct __git_builtin_credential_cache_daemon_ctx_t *)vsf_git_ctx(git_builtin_credential_cache_daemon))
+#	define entries				(git_builtin_credential_cache_daemon_ctx->__entries)
+#	define entries_nr			(git_builtin_credential_cache_daemon_ctx->__entries_nr)
+#	define entries_alloc		(git_builtin_credential_cache_daemon_ctx->__entries_alloc)
+#else
 static struct credential_cache_entry *entries;
 static int entries_nr;
 static int entries_alloc;
+#endif
 
 static void cache_credential(struct credential *c, int timeout)
 {
@@ -51,7 +80,11 @@ static void remove_credential(const struct credential *c)
 
 static timestamp_t check_expirations(void)
 {
+#ifdef __VSF__
+#	define wait_for_entry_until	(git_builtin_credential_cache_daemon_ctx->check_expirations.__wait_for_entry_until)
+#else
 	static timestamp_t wait_for_entry_until;
+#endif
 	int i = 0;
 	timestamp_t now = time(NULL);
 	timestamp_t next = TIME_MAX;
@@ -91,12 +124,19 @@ static timestamp_t check_expirations(void)
 	}
 
 	return next - now;
+#ifdef __VSF__
+#	undef wait_for_entry_until
+#endif
 }
 
 static int read_request(FILE *fh, struct credential *c,
 			struct strbuf *action, int *timeout)
 {
+#ifdef __VSF__
+#	define item					(git_builtin_credential_cache_daemon_ctx->read_request.__item)
+#else
 	static struct strbuf item = STRBUF_INIT;
+#endif
 	const char *p;
 
 	strbuf_getline_lf(&item, fh);
@@ -112,6 +152,9 @@ static int read_request(FILE *fh, struct credential *c,
 	if (credential_read(c, fh) < 0)
 		return -1;
 	return 0;
+#ifdef __VSF__
+#	undef item
+#endif
 }
 
 static void serve_one_client(FILE *in, FILE *out)

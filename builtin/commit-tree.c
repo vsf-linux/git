@@ -20,7 +20,28 @@ static const char * const commit_tree_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_builtin_commit_tree_ctx_t {
+	const char *__sign_commit;
+	struct {
+		struct strbuf __buffer;			// = STRBUF_INIT;
+	} cmd_commit_tree;
+};
+static void __git_builtin_commit_tree_mod_init(void *ctx)
+{
+	struct __git_builtin_commit_tree_ctx_t *__git_builtin_commit_tree_ctx = ctx;
+	__git_builtin_commit_tree_ctx->cmd_commit_tree.__buffer = STRBUF_INIT;
+}
+define_vsf_git_mod(git_builtin_commit_tree,
+	sizeof(struct __git_builtin_commit_tree_ctx_t),
+	GIT_MOD_BUILTIN_COMMIT_TREE,
+	__git_builtin_commit_tree_mod_init
+)
+#	define git_builtin_commit_tree_ctx	((struct __git_builtin_commit_tree_ctx_t *)vsf_git_ctx(git_builtin_commit_tree))
+#	define sign_commit					(git_builtin_commit_tree_ctx->__sign_commit)
+#else
 static const char *sign_commit;
+#endif
 
 static void new_parent(struct commit *parent, struct commit_list **parents_p)
 {
@@ -100,7 +121,11 @@ static int parse_file_arg_callback(const struct option *opt,
 
 int cmd_commit_tree(int argc, const char **argv, const char *prefix)
 {
+#ifdef __VSF__
+#	define buffer						(git_builtin_commit_tree_ctx->cmd_commit_tree.__buffer)
+#else
 	static struct strbuf buffer = STRBUF_INIT;
+#endif
 	struct commit_list *parents = NULL;
 	struct object_id tree_oid;
 	struct object_id commit_oid;
@@ -147,4 +172,7 @@ int cmd_commit_tree(int argc, const char **argv, const char *prefix)
 	printf("%s\n", oid_to_hex(&commit_oid));
 	strbuf_release(&buffer);
 	return 0;
+#ifdef __VSF__
+#	undef buffer
+#endif
 }

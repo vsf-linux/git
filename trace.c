@@ -24,9 +24,27 @@
 #include "cache.h"
 #include "quote.h"
 
+#ifdef __VSF__
+static void __git_trace_mod_init(void *ctx)
+{
+	struct __git_trace_ctx_t *__git_trace_ctx = ctx;
+	__git_trace_ctx->__trace_default_key = (struct trace_key){ "GIT_TRACE", 0, 0, 0 };
+	__git_trace_ctx->__trace_perf_key = TRACE_KEY_INIT(PERFORMANCE);
+	__git_trace_ctx->__trace_setup_key = TRACE_KEY_INIT(SETUP);
+	__git_trace_ctx->prepare_trace_line.__trace_bare = TRACE_KEY_INIT(BARE);
+	__git_trace_ctx->quote_crnl.__new_path = STRBUF_INIT;
+	__git_trace_ctx->__command_line = STRBUF_INIT;
+}
+define_vsf_git_mod(git_trace,
+	sizeof(struct __git_trace_ctx_t),
+	GIT_MOD_TRACE,
+	__git_trace_mod_init
+)
+#else
 struct trace_key trace_default_key = { "GIT_TRACE", 0, 0, 0 };
 struct trace_key trace_perf_key = TRACE_KEY_INIT(PERFORMANCE);
 struct trace_key trace_setup_key = TRACE_KEY_INIT(SETUP);
+#endif
 
 /* Get a trace file descriptor from "key" env variable. */
 static int get_trace_fd(struct trace_key *key, const char *override_envvar)
@@ -92,7 +110,11 @@ void trace_disable(struct trace_key *key)
 static int prepare_trace_line(const char *file, int line,
 			      struct trace_key *key, struct strbuf *buf)
 {
+#ifdef __VSF__
+#	define trace_bare				(git_trace_ctx->prepare_trace_line.__trace_bare)
+#else
 	static struct trace_key trace_bare = TRACE_KEY_INIT(BARE);
+#endif
 	struct timeval tv;
 	struct tm tm;
 	time_t secs;
@@ -103,6 +125,10 @@ static int prepare_trace_line(const char *file, int line,
 	/* unit tests may want to disable additional trace output */
 	if (trace_want(&trace_bare))
 		return 1;
+
+#ifdef __VSF__
+#	undef trace_bare
+#endif
 
 	/* print current timestamp */
 	gettimeofday(&tv, NULL);
@@ -186,8 +212,13 @@ void trace_strbuf_fl(const char *file, int line, struct trace_key *key,
 	strbuf_release(&buf);
 }
 
+#ifdef __VSF__
+#	define perf_start_times			(git_trace_ctx->__perf_start_times)
+#	define perf_indent				(git_trace_ctx->__perf_indent)
+#else
 static uint64_t perf_start_times[10];
 static int perf_indent;
+#endif
 
 uint64_t trace_performance_enter(void)
 {
@@ -347,7 +378,11 @@ void trace_performance_leave_fl(const char *file, int line,
 
 static const char *quote_crnl(const char *path)
 {
+#ifdef __VSF__
+#	define new_path					(git_trace_ctx->quote_crnl.__new_path)
+#else
 	static struct strbuf new_path = STRBUF_INIT;
+#endif
 
 	if (!path)
 		return NULL;
@@ -365,6 +400,9 @@ static const char *quote_crnl(const char *path)
 		path++;
 	}
 	return new_path.buf;
+#ifdef __VSF__
+#	undef new_path
+#endif
 }
 
 /* FIXME: move prefix to startup_info struct and get rid of this arg */
@@ -461,7 +499,11 @@ static inline uint64_t gettimeofday_nanos(void)
  */
 uint64_t getnanotime(void)
 {
+#ifdef __VSF__
+#	define offset					(git_trace_ctx->getnanotime.__offset)
+#else
 	static uint64_t offset;
+#endif
 	if (offset > 1) {
 		/* initialization succeeded, return offset + high res time */
 		return offset + highres_nanos();
@@ -478,9 +520,16 @@ uint64_t getnanotime(void)
 			offset = 1;
 		return now;
 	}
+#ifdef __VSF__
+#	undef offset
+#endif
 }
 
+#ifdef __VSF__
+#	define command_line				(git_trace_ctx->__command_line)
+#else
 static struct strbuf command_line = STRBUF_INIT;
+#endif
 
 static void print_command_performance_atexit(void)
 {

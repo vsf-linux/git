@@ -115,7 +115,9 @@ static int graph_verify(int argc, const char **argv)
 	return verify_commit_graph(the_repository, graph, flags);
 }
 
+#ifndef __VSF__
 extern int read_replace_refs;
+#endif
 static struct commit_graph_opts write_opts;
 
 static int write_option_parse_split(const struct option *opt, const char *arg,

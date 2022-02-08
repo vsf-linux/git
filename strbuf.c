@@ -48,7 +48,21 @@ int skip_to_optional_arg_default(const char *str, const char *prefix,
  * buf is non NULL and ->buf is NUL terminated even for a freshly
  * initialized strbuf.
  */
-char strbuf_slopbuf[1];
+#ifdef __VSF__
+struct __git_strbuf_ctx_t {
+	struct {
+		char __prefix1[3];
+		char __prefix2[2];
+	} strbuf_add_commented_lines;
+};
+define_vsf_git_mod(git_strbuf,
+	sizeof(struct __git_strbuf_ctx_t),
+	GIT_MOD_STRBUF,
+	NULL
+)
+#	define git_strbuf_ctx			((struct __git_strbuf_ctx_t *)vsf_git_ctx(git_strbuf))
+#endif
+const char strbuf_slopbuf[1];
 
 void strbuf_init(struct strbuf *sb, size_t hint)
 {
@@ -358,14 +372,23 @@ static void add_lines(struct strbuf *out,
 
 void strbuf_add_commented_lines(struct strbuf *out, const char *buf, size_t size)
 {
+#ifdef __VSF__
+#	define prefix1					(git_strbuf_ctx->strbuf_add_commented_lines.__prefix1)
+#	define prefix2					(git_strbuf_ctx->strbuf_add_commented_lines.__prefix2)
+#else
 	static char prefix1[3];
 	static char prefix2[2];
+#endif
 
 	if (prefix1[0] != comment_line_char) {
 		xsnprintf(prefix1, sizeof(prefix1), "%c ", comment_line_char);
 		xsnprintf(prefix2, sizeof(prefix2), "%c", comment_line_char);
 	}
 	add_lines(out, prefix1, prefix2, buf, size);
+#ifdef __VSF__
+#	undef prefix1
+#	undef prefix2
+#endif
 }
 
 void strbuf_commented_addf(struct strbuf *sb, const char *fmt, ...)

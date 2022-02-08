@@ -232,7 +232,7 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		} else if (ce_stage(ce)) {
 			bad = _("conflicted");
 		} else if (lstat(dst, &st) == 0 &&
-			 (!ignore_case || strcasecmp(src, dst))) {
+			 (!__ignore_case || strcasecmp(src, dst))) {
 			bad = _("destination exists");
 			if (force) {
 				/*

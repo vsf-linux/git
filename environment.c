@@ -21,12 +21,74 @@
 #include "chdir-notify.h"
 #include "shallow.h"
 
+#ifdef __VSF__
+static void __git_environment_public_mod_init(void *ctx);
+define_vsf_git_mod(git_environment_public,
+	sizeof(struct __git_environment_public_ctx_t),
+	GIT_MOD_ENVIRONMENT_PUBLIC,
+    __git_environment_public_mod_init
+)
+
+struct __git_environment_ctx_t {
+	int __pager_use_color;			// = 1;
+	const char *__editor_program;
+	const char *__askpass_program;
+	const char *__excludes_file;
+	enum auto_crlf __auto_crlf;		// = AUTO_CRLF_FALSE;
+	enum eol __core_eol;			// = EOL_UNSET;
+	int __global_conv_flags_eol;	// = CONV_EOL_RNDTRP_WARN;
+	char *__check_roundtrip_encoding;			// = "SHIFT-JIS";
+	unsigned __whitespace_rule_cfg;				// = WS_DEFAULT_RULE;
+	enum branch_track __git_branch_track;		// = BRANCH_TRACK_REMOTE;
+	int __merge_log_config;			// = -1;
+	enum log_refs_config __log_all_ref_updates;	// = LOG_REFS_UNSET;
+
+	char *__git_namespace;
+	char *__super_prefix;
+	int __git_work_tree_initialized;
+	int __the_shared_repository;	// = PERM_UMASK;
+	int __need_shared_repository_from_config;	// = 1;
+
+	struct {
+		int __initialized;
+	} get_super_prefix;
+	struct {
+		int __cached_result;		// = -1;
+	} print_sha1_ellipsis;
+};
+static void __git_environment_mod_init(void *ctx);
+define_vsf_git_mod(git_environment,
+	sizeof(struct __git_environment_ctx_t),
+	GIT_MOD_ENVIRONMENT,
+	__git_environment_mod_init
+)
+#	define git_environment_ctx		((struct __git_environment_ctx_t *)vsf_git_ctx(git_environment))
+#	define repository_format_precious_objects	(git_environment_ctx->__repository_format_precious_objects)
+#	define repository_format_worktree_config	(git_environment_ctx->__repository_format_worktree_config)
+#	define pager_use_color			(git_environment_ctx->__pager_use_color)
+#	define editor_program			(git_environment_ctx->__editor_program)
+#	define askpass_program			(git_environment_ctx->__askpass_program)
+#	define excludes_file			(git_environment_ctx->__excludes_file)
+#	define auto_crlf				(git_environment_ctx->__auto_crlf)
+#	define core_eol					(git_environment_ctx->__core_eol)
+#	define global_conv_flags_eol	(git_environment_ctx->__global_conv_flags_eol)
+#	define check_roundtrip_encoding	(git_environment_ctx->__check_roundtrip_encoding)
+#	define whitespace_rule_cfg		(git_environment_ctx->__whitespace_rule_cfg)
+#	define git_branch_track			(git_environment_ctx->__git_branch_track)
+#	define object_creation_mode		(git_environment_ctx->__object_creation_mode)
+#	define notes_ref_name			(git_environment_ctx->__notes_ref_name)
+#	define grafts_replace_parents	(git_environment_ctx->__grafts_replace_parents)
+#	define merge_log_config			(git_environment_ctx->__merge_log_config)
+#	define log_all_ref_updates		(git_environment_ctx->__log_all_ref_updates)
+#	define git_namespace			(git_environment_ctx->__git_namespace)
+#	define super_prefix				(git_environment_ctx->__super_prefix)
+#else
 int trust_executable_bit = 1;
 int trust_ctime = 1;
 int check_stat = 1;
 int has_symlinks = 1;
 int minimum_abbrev = 4, default_abbrev = -1;
-int ignore_case;
+int __ignore_case;
 int assume_unchanged;
 int prefer_symlink_refs;
 int is_bare_repository_cfg = -1; /* unspecified */
@@ -62,9 +124,11 @@ unsigned whitespace_rule_cfg = WS_DEFAULT_RULE;
 enum branch_track git_branch_track = BRANCH_TRACK_REMOTE;
 enum rebase_setup_type autorebase = AUTOREBASE_NEVER;
 enum push_default_type push_default = PUSH_DEFAULT_UNSPECIFIED;
+#endif
 #ifndef OBJECT_CREATION_MODE
 #define OBJECT_CREATION_MODE OBJECT_CREATION_USES_HARDLINKS
 #endif
+#ifndef __VSF__
 enum object_creation_mode object_creation_mode = OBJECT_CREATION_MODE;
 char *notes_ref_name;
 int grafts_replace_parents = 1;
@@ -74,15 +138,19 @@ int merge_log_config = -1;
 int precomposed_unicode = -1; /* see probe_utf8_pathname_composition() */
 unsigned long pack_size_limit_cfg;
 enum log_refs_config log_all_ref_updates = LOG_REFS_UNSET;
+#endif
 
 #ifndef PROTECT_HFS_DEFAULT
 #define PROTECT_HFS_DEFAULT 0
 #endif
+#ifndef __VSF__
 int protect_hfs = PROTECT_HFS_DEFAULT;
+#endif
 
 #ifndef PROTECT_NTFS_DEFAULT
 #define PROTECT_NTFS_DEFAULT 1
 #endif
+#ifndef __VSF__
 int protect_ntfs = PROTECT_NTFS_DEFAULT;
 const char *core_fsmonitor;
 
@@ -102,6 +170,56 @@ char *git_work_tree_cfg;
 static char *git_namespace;
 
 static char *super_prefix;
+#endif
+
+#ifdef __VSF__
+static void __git_environment_mod_init(void *ctx)
+{
+	struct __git_environment_ctx_t *__git_environment_ctx = ctx;
+	__git_environment_ctx->__pager_use_color = 1;
+	__git_environment_ctx->__auto_crlf = AUTO_CRLF_FALSE;
+	__git_environment_ctx->__core_eol = EOL_UNSET;
+	__git_environment_ctx->__global_conv_flags_eol = CONV_EOL_RNDTRP_WARN;
+	__git_environment_ctx->__check_roundtrip_encoding = "SHIFT-JIS";
+	__git_environment_ctx->__whitespace_rule_cfg = WS_DEFAULT_RULE;
+	__git_environment_ctx->__git_branch_track = BRANCH_TRACK_REMOTE;
+	__git_environment_ctx->__merge_log_config = -1;
+	__git_environment_ctx->__the_shared_repository = PERM_UMASK;
+	__git_environment_ctx->__need_shared_repository_from_config = 1;
+	__git_environment_ctx->print_sha1_ellipsis.__cached_result = -1;
+}
+static void __git_environment_public_mod_init(void *ctx)
+{
+    struct __git_environment_public_ctx_t *__git_environment_public_ctx = ctx;
+    __git_environment_public_ctx->__trust_executable_bit = 1;
+	__git_environment_public_ctx->__trust_ctime = 1;
+	__git_environment_public_ctx->__check_stat = 1;
+	__git_environment_public_ctx->__has_symlinks = 1;
+	__git_environment_public_ctx->__minimum_abbrev = 4;
+	__git_environment_public_ctx->__default_abbrev = -1;
+	__git_environment_public_ctx->__warn_ambiguous_refs = 1;
+	__git_environment_public_ctx->__warn_on_object_refname_ambiguity = 1;
+	__git_environment_public_ctx->__zlib_compression_level = Z_BEST_SPEED;
+	__git_environment_public_ctx->__pack_compression_level = Z_DEFAULT_COMPRESSION;
+	__git_environment_public_ctx->__packed_git_window_size = DEFAULT_PACKED_GIT_WINDOW_SIZE;
+	__git_environment_public_ctx->__packed_git_limit = DEFAULT_PACKED_GIT_LIMIT;
+	__git_environment_public_ctx->__delta_base_cache_limit = 96 * 1024 * 1024;
+	__git_environment_public_ctx->__big_file_threshold = 512 * 1024 * 1024;
+	__git_environment_public_ctx->__use_fsync = -1;
+	__git_environment_public_ctx->__read_replace_refs = 1;
+	__git_environment_public_ctx->__protect_hfs = PROTECT_HFS_DEFAULT;
+	__git_environment_public_ctx->__protect_ntfs = PROTECT_NTFS_DEFAULT;
+	__git_environment_public_ctx->__precomposed_unicode = -1;
+	__git_environment_public_ctx->__core_preload_index = 1;
+	__git_environment_public_ctx->__comment_line_char = '#';
+	__git_environment_public_ctx->__log_all_ref_updates = LOG_REFS_UNSET;
+	__git_environment_public_ctx->__autorebase = AUTOREBASE_NEVER;
+	__git_environment_public_ctx->____push_default = PUSH_DEFAULT_UNSPECIFIED;
+	__git_environment_public_ctx->__object_creation_mode = OBJECT_CREATION_MODE;
+	__git_environment_public_ctx->__grafts_replace_parents = 1;
+	__git_environment_public_ctx->__is_bare_repository_cfg = -1;
+}
+#endif
 
 /*
  * Repository-local GIT_* environment variables; see cache.h for details.
@@ -233,15 +351,26 @@ const char *strip_namespace(const char *namespaced_ref)
 
 const char *get_super_prefix(void)
 {
+#ifdef __VSF__
+#	define initialized				(git_environment_ctx->get_super_prefix.__initialized)
+#else
 	static int initialized;
+#endif
 	if (!initialized) {
 		super_prefix = xstrdup_or_null(getenv(GIT_SUPER_PREFIX_ENVIRONMENT));
 		initialized = 1;
 	}
 	return super_prefix;
+#ifdef __VSF__
+#	undef initialized
+#endif
 }
 
+#ifdef __VSF__
+#	define git_work_tree_initialized	(git_environment_ctx->__git_work_tree_initialized)
+#else
 static int git_work_tree_initialized;
+#endif
 
 /*
  * Note.  This works only before you used a work tree.  This was added
@@ -375,8 +504,13 @@ const char *get_commit_output_encoding(void)
 	return git_commit_encoding ? git_commit_encoding : "UTF-8";
 }
 
+#ifdef __VSF__
+#	define the_shared_repository	(git_environment_ctx->__the_shared_repository)
+#	define need_shared_repository_from_config	(git_environment_ctx->__need_shared_repository_from_config)
+#else
 static int the_shared_repository = PERM_UMASK;
 static int need_shared_repository_from_config = 1;
+#endif
 
 void set_shared_repository(int value)
 {
@@ -412,7 +546,11 @@ int print_sha1_ellipsis(void)
 	 * Determine if the calling environment contains the variable
 	 * GIT_PRINT_SHA1_ELLIPSIS set to "yes".
 	 */
+#ifdef __VSF__
+#	define cached_result			(git_environment_ctx->print_sha1_ellipsis.__cached_result)
+#else
 	static int cached_result = -1; /* unknown */
+#endif
 
 	if (cached_result < 0) {
 		const char *v = getenv("GIT_PRINT_SHA1_ELLIPSIS");

@@ -211,6 +211,126 @@ struct pathspec;
 struct child_process;
 struct tree;
 
+#ifdef __VSF__
+struct __git_environment_public_ctx_t {
+	int __trust_executable_bit;
+	int __trust_ctime;
+	int __check_stat;
+	int __has_symlinks;
+	int __minimum_abbrev, __default_abbrev;
+	int ____ignore_case;
+	int __assume_unchanged;
+	int __prefer_symlink_refs;
+	int __warn_ambiguous_refs;
+	int __warn_on_object_refname_ambiguity;
+	char *__apply_default_whitespace;
+	char *__apply_default_ignorewhitespace;
+	const char *__git_attributes_file;
+	const char *__git_hooks_path;
+	int __zlib_compression_level;
+	int __pack_compression_level;
+	size_t __packed_git_window_size;
+	size_t __packed_git_limit;
+	size_t __delta_base_cache_limit;
+	unsigned long __big_file_threshold;
+	unsigned long __pack_size_limit_cfg;
+	int __read_replace_refs;
+	char *__git_replace_ref_base;
+	int __fsync_object_files;
+	int __use_fsync;
+	int __core_preload_index;
+	int __precomposed_unicode;
+	int __protect_hfs;
+	int __protect_ntfs;
+	const char *__core_fsmonitor;
+	int __core_apply_sparse_checkout;
+	int __core_sparse_checkout_cone;
+	char __comment_line_char;
+	int __auto_comment_line_char;
+	enum log_refs_config {
+		LOG_REFS_UNSET = -1,
+		LOG_REFS_NONE = 0,
+		LOG_REFS_NORMAL,
+		LOG_REFS_ALWAYS
+	} __log_all_ref_updates;
+	enum rebase_setup_type {
+		AUTOREBASE_NEVER = 0,
+		AUTOREBASE_LOCAL,
+		AUTOREBASE_REMOTE,
+		AUTOREBASE_ALWAYS
+	} __autorebase;
+	enum push_default_type {
+		PUSH_DEFAULT_NOTHING = 0,
+		PUSH_DEFAULT_MATCHING,
+		PUSH_DEFAULT_SIMPLE,
+		PUSH_DEFAULT_UPSTREAM,
+		PUSH_DEFAULT_CURRENT,
+		PUSH_DEFAULT_UNSPECIFIED
+	} ____push_default;
+	enum object_creation_mode {
+		OBJECT_CREATION_USES_HARDLINKS = 0,
+		OBJECT_CREATION_USES_RENAMES = 1
+	} __object_creation_mode;
+	char *__notes_ref_name;
+	int __grafts_replace_parents;
+	int __repository_format_precious_objects;
+	int __repository_format_worktree_config;
+	int __is_bare_repository_cfg;
+	char *__git_work_tree_cfg;
+	const char *__git_commit_encoding;
+	const char *__git_log_output_encoding;
+};
+declare_vsf_git_mod(git_environment_public)
+#	define git_environment_public_ctx	((struct __git_environment_public_ctx_t *)vsf_git_ctx(git_environment_public))
+#	define trust_executable_bit			(git_environment_public_ctx->__trust_executable_bit)
+#	define trust_ctime					(git_environment_public_ctx->__trust_ctime)
+#	define check_stat					(git_environment_public_ctx->__check_stat)
+#	define has_symlinks					(git_environment_public_ctx->__has_symlinks)
+#	define minimum_abbrev				(git_environment_public_ctx->__minimum_abbrev)
+#	define default_abbrev				(git_environment_public_ctx->__default_abbrev)
+#	define __ignore_case				(git_environment_public_ctx->____ignore_case)
+#	define assume_unchanged				(git_environment_public_ctx->__assume_unchanged)
+#	define prefer_symlink_refs			(git_environment_public_ctx->__prefer_symlink_refs)
+#	define warn_ambiguous_refs			(git_environment_public_ctx->__warn_ambiguous_refs)
+#	define warn_on_object_refname_ambiguity	(git_environment_public_ctx->__warn_on_object_refname_ambiguity)
+#	define apply_default_whitespace		(git_environment_public_ctx->__apply_default_whitespace)
+#	define apply_default_ignorewhitespace	(git_environment_public_ctx->__apply_default_ignorewhitespace)
+#	define git_attributes_file			(git_environment_public_ctx->__git_attributes_file)
+#	define git_hooks_path				(git_environment_public_ctx->__git_hooks_path)
+#	define zlib_compression_level		(git_environment_public_ctx->__zlib_compression_level)
+#	define pack_compression_level		(git_environment_public_ctx->__pack_compression_level)
+#	define packed_git_window_size		(git_environment_public_ctx->__packed_git_window_size)
+#	define packed_git_limit				(git_environment_public_ctx->__packed_git_limit)
+#	define delta_base_cache_limit		(git_environment_public_ctx->__delta_base_cache_limit)
+#	define big_file_threshold			(git_environment_public_ctx->__big_file_threshold)
+#	define pack_size_limit_cfg			(git_environment_public_ctx->__pack_size_limit_cfg)
+#	define read_replace_refs			(git_environment_public_ctx->__read_replace_refs)
+#	define git_replace_ref_base			(git_environment_public_ctx->__git_replace_ref_base)
+#	define fsync_object_files			(git_environment_public_ctx->__fsync_object_files)
+#	define use_fsync					(git_environment_public_ctx->__use_fsync)
+#	define core_preload_index			(git_environment_public_ctx->__core_preload_index)
+#	define precomposed_unicode			(git_environment_public_ctx->__precomposed_unicode)
+#	define protect_hfs					(git_environment_public_ctx->__protect_hfs)
+#	define protect_ntfs					(git_environment_public_ctx->__protect_ntfs)
+#	define core_fsmonitor				(git_environment_public_ctx->__core_fsmonitor)
+#	define core_apply_sparse_checkout	(git_environment_public_ctx->__core_apply_sparse_checkout)
+#	define core_sparse_checkout_cone	(git_environment_public_ctx->__core_sparse_checkout_cone)
+#	define comment_line_char			(git_environment_public_ctx->__comment_line_char)
+#	define auto_comment_line_char		(git_environment_public_ctx->__auto_comment_line_char)
+#	define log_all_ref_updates			(git_environment_public_ctx->__log_all_ref_updates)
+#	define autorebase					(git_environment_public_ctx->__autorebase)
+#	define __push_default				(git_environment_public_ctx->____push_default)
+#	define object_creation_mode			(git_environment_public_ctx->__object_creation_mode)
+#	define notes_ref_name				(git_environment_public_ctx->__notes_ref_name)
+#	define grafts_replace_parents		(git_environment_public_ctx->__grafts_replace_parents)
+#	define repository_format_precious_objects	(git_environment_public_ctx->__repository_format_precious_objects)
+#	define repository_format_worktree_config	(git_environment_public_ctx->__repository_format_worktree_config)
+#	define is_bare_repository_cfg		(git_environment_public_ctx->__is_bare_repository_cfg)
+#	define git_work_tree_cfg			(git_environment_public_ctx->__git_work_tree_cfg)
+#	define git_commit_encoding			(git_environment_public_ctx->__git_commit_encoding)
+#	define git_log_output_encoding		(git_environment_public_ctx->__git_log_output_encoding)
+#endif
+
 /*
  * Copy the sha1 and stat state of a cache entry from one to
  * another. But we never change the name, or the hash state!
@@ -260,7 +380,9 @@ static inline unsigned int create_ce_mode(unsigned int mode)
 static inline unsigned int ce_mode_from_stat(const struct cache_entry *ce,
 					     unsigned int mode)
 {
+#ifndef __VSF__
 	extern int trust_executable_bit, has_symlinks;
+#endif
 	if (!has_symlinks && S_ISREG(mode) &&
 	    ce && S_ISLNK(ce->ce_mode))
 		return ce->ce_mode;
@@ -560,10 +682,14 @@ void setup_git_env(const char *git_dir);
  */
 int have_git_dir(void);
 
+#ifndef __VSF__
 extern int is_bare_repository_cfg;
+#endif
 int is_bare_repository(void);
 int is_inside_git_dir(void);
+#ifndef __VSF__
 extern char *git_work_tree_cfg;
+#endif
 int is_inside_work_tree(void);
 const char *get_git_dir(void);
 const char *get_git_common_dir(void);
@@ -947,17 +1073,40 @@ struct cache_entry *refresh_cache_entry(struct index_state *, struct cache_entry
 
 void set_alternate_index_output(const char *);
 
+#ifdef __VSF__
+struct __git_read_cache_public_ctx_t {
+	int __verify_index_checksum;
+	int __verify_ce_order;
+};
+declare_vsf_git_mod(git_read_cache_public)
+#	define git_read_cache_public_ctx	((struct __git_read_cache_public_ctx_t *)vsf_git_ctx(git_read_cache_public))
+#	define verify_index_checksum		(git_read_cache_public_ctx->__verify_index_checksum)
+#	define verify_ce_order				(git_read_cache_public_ctx->__verify_ce_order)
+#else
 extern int verify_index_checksum;
 extern int verify_ce_order;
+#endif
 
 /* Environment bits from configuration mechanism */
+#ifndef __VSF__
 extern int trust_executable_bit;
 extern int trust_ctime;
 extern int check_stat;
+#endif
+#ifdef __VSF__
+struct __git_quote_public_ctx_t {
+	int __quote_path_fully;
+};
+declare_vsf_git_mod(git_quote_public)
+#	define git_quote_public_ctx			((struct __git_quote_public_ctx_t *)vsf_git_ctx(git_quote_public))
+#	define quote_path_fully				(git_quote_public_ctx->__quote_path_fully)
+#else
 extern int quote_path_fully;
+#endif
+#ifndef __VSF__
 extern int has_symlinks;
 extern int minimum_abbrev, default_abbrev;
-extern int ignore_case;
+extern int __ignore_case;
 extern int assume_unchanged;
 extern int prefer_symlink_refs;
 extern int warn_ambiguous_refs;
@@ -973,6 +1122,7 @@ extern size_t packed_git_limit;
 extern size_t delta_base_cache_limit;
 extern unsigned long big_file_threshold;
 extern unsigned long pack_size_limit_cfg;
+#endif
 
 /*
  * Accessors for the core.sharedrepository config which lazy-load the value
@@ -990,6 +1140,7 @@ void reset_shared_repository(void);
  * $GIT_NO_REPLACE_OBJECTS is set, but is set to false by some
  * commands that do not want replace references to be active.
  */
+#ifndef __VSF__
 extern int read_replace_refs;
 extern char *git_replace_ref_base;
 
@@ -1003,6 +1154,7 @@ extern const char *core_fsmonitor;
 
 extern int core_apply_sparse_checkout;
 extern int core_sparse_checkout_cone;
+#endif
 
 /*
  * Returns the boolean value of $GIT_OPTIONAL_LOCKS (or the default value).
@@ -1013,6 +1165,7 @@ int use_optional_locks(void);
  * The character that begins a commented line in user-editable file
  * that is subject to stripspace.
  */
+#ifndef __VSF__
 extern char comment_line_char;
 extern int auto_comment_line_char;
 
@@ -1041,7 +1194,7 @@ enum push_default_type {
 };
 
 extern enum rebase_setup_type autorebase;
-extern enum push_default_type push_default;
+extern enum push_default_type __push_default;
 
 enum object_creation_mode {
 	OBJECT_CREATION_USES_HARDLINKS = 0,
@@ -1053,7 +1206,7 @@ extern enum object_creation_mode object_creation_mode;
 extern char *notes_ref_name;
 
 extern int grafts_replace_parents;
-
+#endif
 /*
  * GIT_REPO_VERSION is the version we write by default. The
  * _READ variant is the highest number we know how to
@@ -1061,8 +1214,10 @@ extern int grafts_replace_parents;
  */
 #define GIT_REPO_VERSION 0
 #define GIT_REPO_VERSION_READ 1
+#ifndef __VSF__
 extern int repository_format_precious_objects;
 extern int repository_format_worktree_config;
+#endif
 
 /*
  * You _have_ to initialize a `struct repository_format` using
@@ -1718,7 +1873,16 @@ int odb_pack_keep(const char *name);
  *
  * Its default value is 1.
  */
+#ifdef __VSF__
+struct __git_object_file_public_ctx_t {
+	int __fetch_if_missing;
+};
+declare_vsf_git_mod(git_object_file_public)
+#	define git_object_file_public_ctx	((struct __git_object_file_public_ctx_t *)vsf_git_ctx(git_object_file_public))
+#	define fetch_if_missing				(git_object_file_public_ctx->__fetch_if_missing)
+#else
 extern int fetch_if_missing;
+#endif
 
 /* Dumb servers support */
 int update_server_info(int);
@@ -1729,10 +1893,24 @@ const char *get_commit_output_encoding(void);
 int committer_ident_sufficiently_given(void);
 int author_ident_sufficiently_given(void);
 
+#ifndef __VSF__
 extern const char *git_commit_encoding;
 extern const char *git_log_output_encoding;
+#endif
+
+#ifdef __VSF__
+struct __git_mailmap_public_ctx_t {
+	const char *__git_mailmap_file;
+	const char *__git_mailmap_blob;
+};
+declare_vsf_git_mod(git_mailmap_public)
+#	define git_mailmap_public_ctx		((struct __git_mailmap_public_ctx_t *)vsf_git_ctx(git_mailmap_public))
+#	define git_mailmap_file				(git_mailmap_public_ctx->__git_mailmap_file)
+#	define git_mailmap_blob				(git_mailmap_public_ctx->__git_mailmap_blob)
+#else
 extern const char *git_mailmap_file;
 extern const char *git_mailmap_blob;
+#endif
 
 /* IO helper functions */
 void maybe_flush_or_die(FILE *, const char *);

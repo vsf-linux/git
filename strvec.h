@@ -33,7 +33,7 @@ struct strvec {
 	size_t alloc;
 };
 
-#define STRVEC_INIT { \
+#define STRVEC_INIT (struct strvec){ \
 	.v = empty_strvec, \
 }
 

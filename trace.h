@@ -87,11 +87,40 @@ struct trace_key {
 	unsigned int  need_close : 1;
 };
 
+#ifdef __VSF__
+struct __git_trace_ctx_t {
+	struct trace_key __trace_default_key;	// = { "GIT_TRACE", 0, 0, 0 };
+	struct trace_key __trace_perf_key;		// = TRACE_KEY_INIT(PERFORMANCE);
+	struct trace_key __trace_setup_key;		// = TRACE_KEY_INIT(SETUP);
+
+	uint64_t __perf_start_times[10];
+	int __perf_indent;
+	struct strbuf __command_line;			// = STRBUF_INIT;
+
+	struct {
+		struct trace_key __trace_bare;		// = TRACE_KEY_INIT(BARE);
+	} prepare_trace_line;
+	struct {
+		struct strbuf __new_path;			// = STRBUF_INIT;
+	} quote_crnl;
+	struct {
+		uint64_t __offset;
+	}getnanotime;
+};
+declare_vsf_git_mod(git_trace)
+#	define git_trace_ctx					((struct __git_trace_ctx_t *)vsf_git_ctx(git_trace))
+#	define trace_default_key				(git_trace_ctx->__trace_default_key)
+#	define trace_perf_key					(git_trace_ctx->__trace_perf_key)
+#	define trace_setup_key					(git_trace_ctx->__trace_setup_key)
+#else
 extern struct trace_key trace_default_key;
+#endif
 
 #define TRACE_KEY_INIT(name) (struct trace_key){ .key = "GIT_TRACE_" #name }
+#ifndef __VSF__
 extern struct trace_key trace_perf_key;
 extern struct trace_key trace_setup_key;
+#endif
 
 void trace_repo_setup(const char *prefix);
 

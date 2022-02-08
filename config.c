@@ -1308,7 +1308,7 @@ static int git_default_core_config(const char *var, const char *value, void *cb)
 	}
 
 	if (!strcmp(var, "core.ignorecase")) {
-		ignore_case = git_config_bool(var, value);
+		__ignore_case = git_config_bool(var, value);
 		return 0;
 	}
 
@@ -1595,17 +1595,17 @@ static int git_default_push_config(const char *var, const char *value)
 		if (!value)
 			return config_error_nonbool(var);
 		else if (!strcmp(value, "nothing"))
-			push_default = PUSH_DEFAULT_NOTHING;
+			__push_default = PUSH_DEFAULT_NOTHING;
 		else if (!strcmp(value, "matching"))
-			push_default = PUSH_DEFAULT_MATCHING;
+			__push_default = PUSH_DEFAULT_MATCHING;
 		else if (!strcmp(value, "simple"))
-			push_default = PUSH_DEFAULT_SIMPLE;
+			__push_default = PUSH_DEFAULT_SIMPLE;
 		else if (!strcmp(value, "upstream"))
-			push_default = PUSH_DEFAULT_UPSTREAM;
+			__push_default = PUSH_DEFAULT_UPSTREAM;
 		else if (!strcmp(value, "tracking")) /* deprecated */
-			push_default = PUSH_DEFAULT_UPSTREAM;
+			__push_default = PUSH_DEFAULT_UPSTREAM;
 		else if (!strcmp(value, "current"))
-			push_default = PUSH_DEFAULT_CURRENT;
+			__push_default = PUSH_DEFAULT_CURRENT;
 		else {
 			error(_("malformed value for %s: %s"), var, value);
 			return error(_("must be one of nothing, matching, simple, "

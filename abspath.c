@@ -1,5 +1,24 @@
 #include "cache.h"
 
+#ifdef __VSF__
+struct __git_abspath_ctx_t {
+	struct {
+		struct strbuf __sb;			// = STRBUF_INIT;
+	} absolute_path;
+};
+static void __git_abspath_mod_init(void *ctx)
+{
+	struct __git_abspath_ctx_t *__git_abspath_ctx = ctx;
+	__git_abspath_ctx->absolute_path.__sb = STRBUF_INIT;
+}
+define_vsf_git_mod(git_abspath,
+	sizeof(struct __git_abspath_ctx_t),
+	GIT_MOD_ABSPATH,
+	__git_abspath_mod_init
+)
+#	define git_abspath_ctx			((struct __git_abspath_ctx_t *)vsf_git_ctx(git_abspath))
+#endif
+
 /*
  * Do not use this for inspecting *tracked* content.  When path is a
  * symlink to a directory, we do not want to say it is a directory when
@@ -249,10 +268,17 @@ char *real_pathdup(const char *path, int die_on_error)
  */
 const char *absolute_path(const char *path)
 {
+#ifdef __VSF__
+#	define sb						(git_abspath_ctx->absolute_path.__sb)
+#else
 	static struct strbuf sb = STRBUF_INIT;
+#endif
 	strbuf_reset(&sb);
 	strbuf_add_absolute_path(&sb, path);
 	return sb.buf;
+#ifdef __VSF__
+#	undef sb
+#endif
 }
 
 char *absolute_pathdup(const char *path)

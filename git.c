@@ -38,7 +38,25 @@ const char git_more_info_string[] =
 	   "to read about a specific subcommand or concept.\n"
 	   "See 'git help git' for an overview of the system.");
 
+#ifdef __VSF__
+struct __git_git_ctx_t {
+	int __use_pager;				// = -1;
+};
+static void __git_git_mod_init(void *ctx)
+{
+	struct __git_git_ctx_t *__git_git_ctx = ctx;
+	__git_git_ctx->__use_pager = -1;
+}
+define_vsf_git_mod(git_git,
+	sizeof(struct __git_git_ctx_t),
+	GIT_MOD_GIT,
+	__git_git_mod_init
+)
+#	define git_git_ctx				((struct __git_git_ctx_t *)vsf_git_ctx(git_git))
+#	define use_pager				(git_git_ctx->__use_pager)
+#else
 static int use_pager = -1;
+#endif
 
 static void list_builtins(struct string_list *list, unsigned int exclude_option);
 
@@ -484,7 +502,7 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
 	return 0;
 }
 
-static struct cmd_struct commands[] = {
+static const struct cmd_struct commands[] = {
 	{ "add", cmd_add, RUN_SETUP | NEED_WORK_TREE },
 	{ "am", cmd_am, RUN_SETUP | NEED_WORK_TREE },
 	{ "annotate", cmd_annotate, RUN_SETUP | NO_PARSEOPT },
@@ -631,7 +649,7 @@ static struct cmd_struct *get_builtin(const char *s)
 {
 	int i;
 	for (i = 0; i < ARRAY_SIZE(commands); i++) {
-		struct cmd_struct *p = commands + i;
+		struct cmd_struct *p = (struct cmd_struct *)(commands + i);
 		if (!strcmp(s, p->cmd))
 			return p;
 	}

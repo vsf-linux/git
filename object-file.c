@@ -1509,7 +1509,20 @@ void disable_obj_read_lock(void)
 	pthread_mutex_destroy(&obj_read_mutex);
 }
 
+#ifdef __VSF__
+static void __git_object_file_public_mod_init(void *ctx)
+{
+    struct __git_object_file_public_ctx_t *__git_object_file_public_ctx = ctx;
+    __git_object_file_public_ctx->__fetch_if_missing = 1;
+}
+define_vsf_git_mod(git_object_file_public,
+	sizeof(struct __git_object_file_public_ctx_t),
+	GIT_MOD_OBJECT_FILE_PUBLIC,
+    __git_object_file_public_mod_init
+)
+#else
 int fetch_if_missing = 1;
+#endif
 
 static int do_oid_object_info_extended(struct repository *r,
 				       const struct object_id *oid,

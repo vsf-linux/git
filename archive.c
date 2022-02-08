@@ -18,10 +18,40 @@ static char const * const archive_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_archive_ctx_t {
+	const struct archiver **__archivers;
+	int __nr_archivers;
+	int __alloc_archivers;
+	int __remote_allow_unreachable;
+	struct {
+		struct attr_check *__check;
+	} get_archive_attrs;
+	struct {
+		struct strbuf __path;		// = STRBUF_INIT;
+	} write_archive_entry;
+};
+static void __git_archive_mod_init(void *ctx)
+{
+	struct __git_archive_ctx_t *__git_archive_ctx = ctx;
+	__git_archive_ctx->write_archive_entry.__path = STRBUF_INIT;
+}
+define_vsf_git_mod(git_archive,
+	sizeof(struct __git_archive_ctx_t),
+	GIT_MOD_ARCHIVE,
+	__git_archive_mod_init
+)
+#	define git_archive_ctx			((struct __git_archive_ctx_t *)vsf_git_ctx(git_archive))
+#	define archivers				(git_archive_ctx->__archivers)
+#	define nr_archivers				(git_archive_ctx->__nr_archivers)
+#	define alloc_archivers			(git_archive_ctx->__alloc_archivers)
+#	define remote_allow_unreachable	(git_archive_ctx->__remote_allow_unreachable)
+#else
 static const struct archiver **archivers;
 static int nr_archivers;
 static int alloc_archivers;
 static int remote_allow_unreachable;
+#endif
 
 void register_archiver(struct archiver *ar)
 {
@@ -116,11 +146,18 @@ struct archiver_context {
 static const struct attr_check *get_archive_attrs(struct index_state *istate,
 						  const char *path)
 {
+#ifdef __VSF__
+#	define check					(git_archive_ctx->get_archive_attrs.__check)
+#else
 	static struct attr_check *check;
+#endif
 	if (!check)
 		check = attr_check_initl("export-ignore", "export-subst", NULL);
 	git_check_attr(istate, path, check);
 	return check;
+#ifdef __VSF__
+#	undef check
+#endif
 }
 
 static int check_attr_export_ignore(const struct attr_check *check)
@@ -137,7 +174,11 @@ static int write_archive_entry(const struct object_id *oid, const char *base,
 		int baselen, const char *filename, unsigned mode,
 		void *context)
 {
+#ifdef __VSF__
+#	define path						(git_archive_ctx->write_archive_entry.__path)
+#else
 	static struct strbuf path = STRBUF_INIT;
+#endif
 	struct archiver_context *c = context;
 	struct archiver_args *args = c->args;
 	write_archive_entry_fn_t write_entry = c->write_entry;
@@ -189,6 +230,9 @@ static int write_archive_entry(const struct object_id *oid, const char *base,
 	err = write_entry(args, oid, path.buf, path.len, mode, buffer, size);
 	free(buffer);
 	return err;
+#ifdef __VSF__
+#	undef path
+#endif
 }
 
 static void queue_directory(const struct object_id *oid,

@@ -2,7 +2,20 @@
 #include "quote.h"
 #include "strvec.h"
 
+#ifdef __VSF__
+static void __git_quote_public_mod_init(void *ctx)
+{
+    struct __git_quote_public_ctx_t *__git_quote_public_ctx = ctx;
+    __git_quote_public_ctx->__quote_path_fully = 1;
+}
+define_vsf_git_mod(git_quote_public,
+	sizeof(struct __git_quote_public_ctx_t),
+	GIT_MOD_QUOTE_PUBLIC,
+    __git_quote_public_mod_init
+)
+#else
 int quote_path_fully = 1;
+#endif
 
 static inline int need_bs_quote(char c)
 {

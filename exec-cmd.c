@@ -21,6 +21,24 @@
 
 static const char *system_prefix(void);
 
+#ifdef __VSF__
+struct __git_exec_cmd_ctx_t {
+#ifdef RUNTIME_PREFIX
+	const char *__executable_dirname;
+	struct {
+		const char *__prefix;
+	} system_prefix;
+#endif
+	const char *__exec_path_value;
+};
+define_vsf_git_mod(git_exec_cmd,
+	sizeof(struct __git_exec_cmd_ctx_t),
+	GIT_MOD_EXEC_CMD,
+	NULL
+)
+#	define git_exec_cmd_ctx			((struct __git_exec_cmd_ctx_t *)vsf_git_ctx(git_exec_cmd))
+#endif
+
 #ifdef RUNTIME_PREFIX
 
 /**
@@ -35,11 +53,19 @@ static const char *system_prefix(void);
  * Path to the current Git executable. Resolved on startup by
  * 'git_resolve_executable_dir'.
  */
+#ifdef __VSF__
+#	define executable_dirname		(git_exec_cmd_ctx->__executable_dirname)
+#else
 static const char *executable_dirname;
+#endif
 
 static const char *system_prefix(void)
 {
+#ifdef __VSF__
+#	define prefix					(git_exec_cmd_ctx->system_prefix.__prefix)
+#else
 	static const char *prefix;
+#endif
 
 	assert(executable_dirname);
 	assert(is_absolute_path(executable_dirname));
@@ -54,6 +80,9 @@ static const char *system_prefix(void)
 				"Using static fallback '%s'.\n", prefix);
 	}
 	return prefix;
+#ifdef __VSF__
+#	undef prefix
+#endif
 }
 
 /*
@@ -269,7 +298,11 @@ char *system_path(const char *path)
 	return strbuf_detach(&d, NULL);
 }
 
+#ifdef __VSF__
+#	define exec_path_value			(git_exec_cmd_ctx->__exec_path_value)
+#else
 static const char *exec_path_value;
+#endif
 
 void git_set_exec_path(const char *exec_path)
 {

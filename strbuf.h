@@ -69,8 +69,8 @@ struct strbuf {
 	char *buf;
 };
 
-extern char strbuf_slopbuf[];
-#define STRBUF_INIT  (struct strbuf){ .buf = strbuf_slopbuf }
+extern const char strbuf_slopbuf[];
+#define STRBUF_INIT  (struct strbuf){ .buf = (char *)strbuf_slopbuf }
 
 /*
  * Predeclare this here, since cache.h includes this file before it defines the

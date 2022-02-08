@@ -1900,7 +1900,7 @@ static const char *branch_get_push_1(struct remote_state *remote_state,
 	if (remote->mirror)
 		return tracking_for_push_dest(remote, branch->refname, err);
 
-	switch (push_default) {
+	switch (__push_default) {
 	case PUSH_DEFAULT_NOTHING:
 		return error_buf(err, _("push has no destination (push.default is 'nothing')"));
 

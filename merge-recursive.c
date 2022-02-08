@@ -704,10 +704,10 @@ static int remove_file(struct merge_options *opt, int clean,
 			return -1;
 	}
 	if (update_working_directory) {
-		if (ignore_case) {
+		if (__ignore_case) {
 			struct cache_entry *ce;
 			ce = index_file_exists(opt->repo->index, path, strlen(path),
-					       ignore_case);
+					       __ignore_case);
 			if (ce && ce_stage(ce) == 0 && strcmp(path, ce->name))
 				return 0;
 		}
@@ -870,7 +870,7 @@ static int was_dirty(struct merge_options *opt, const char *path)
 		return !dirty;
 
 	ce = index_file_exists(opt->priv->unpack_opts.src_index,
-			       path, strlen(path), ignore_case);
+			       path, strlen(path), __ignore_case);
 	dirty = verify_uptodate(ce, &opt->priv->unpack_opts) != 0;
 	return dirty;
 }

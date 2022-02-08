@@ -794,12 +794,12 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 	 * case of the file being added to the repository matches (is folded into) the existing
 	 * entry's directory case.
 	 */
-	if (ignore_case) {
+	if (__ignore_case) {
 		adjust_dirname_case(istate, ce->name);
 	}
 	if (!(flags & ADD_CACHE_RENORMALIZE)) {
 		alias = index_file_exists(istate, ce->name,
-					  ce_namelen(ce), ignore_case);
+					  ce_namelen(ce), __ignore_case);
 		if (alias &&
 		    !ce_stage(alias) &&
 		    !ie_match_stat(istate, alias, st, ce_option)) {
@@ -820,7 +820,7 @@ int add_to_index(struct index_state *istate, const char *path, struct stat *st, 
 	} else
 		set_object_name_for_intent_to_add_entry(ce);
 
-	if (ignore_case && alias && different_name(ce, alias))
+	if (__ignore_case && alias && different_name(ce, alias))
 		ce = create_alias_ce(istate, ce, alias);
 	ce->ce_flags |= CE_ADDED;
 
@@ -1783,11 +1783,19 @@ struct ondisk_cache_entry {
 #define ondisk_data_size_max(len) (ondisk_data_size(CE_EXTENDED, len))
 #define ondisk_ce_size(ce) (ondisk_cache_entry_size(ondisk_data_size((ce)->ce_flags, ce_namelen(ce))))
 
+#ifdef __VSF__
+define_vsf_git_mod(git_read_cache_public,
+	sizeof(struct __git_read_cache_public_ctx_t),
+	GIT_MOD_READ_CACHE_PUBLIC,
+    NULL
+)
+#else
 /* Allow fsck to force verification of the index checksum. */
 int verify_index_checksum;
 
 /* Allow fsck to force verification of the cache entry order. */
 int verify_ce_order;
+#endif
 
 static int verify_hdr(const struct cache_header *hdr, unsigned long size)
 {

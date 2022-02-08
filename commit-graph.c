@@ -212,7 +212,9 @@ static struct commit_graph *alloc_commit_graph(void)
 	return g;
 }
 
+#ifndef __VSF__
 extern int read_replace_refs;
+#endif
 
 static int commit_graph_compatible(struct repository *r)
 {

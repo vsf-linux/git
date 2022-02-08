@@ -13,8 +13,16 @@ static inline void debug_mm(const char *format, ...) {}
 static inline const char *debug_str(const char *s) { return s; }
 #endif
 
+#ifdef __VSF__
+define_vsf_git_mod(git_mailmap_public,
+	sizeof(struct __git_mailmap_public_ctx_t),
+	GIT_MOD_MAILMAP_PUBLIC,
+    NULL
+)
+#else
 const char *git_mailmap_file;
 const char *git_mailmap_blob;
+#endif
 
 struct mailmap_info {
 	char *name;
