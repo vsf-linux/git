@@ -28,8 +28,30 @@ struct child_to_clean {
 	struct child_process *process;
 	struct child_to_clean *next;
 };
+#ifdef __VSF__
+struct __git_run_command_ctx_t {
+	struct child_to_clean *__children_to_clean;
+	int __installed_child_cleanup_handler;
+#ifndef NO_PTHREADS
+	pthread_t __main_thread;
+	int __main_thread_set;
+	pthread_key_t __async_key;
+	pthread_key_t __async_die_counter;
+#endif
+	void *__pp_for_signal;
+};
+define_vsf_git_mod(git_run_command,
+	sizeof(struct __git_run_command_ctx_t),
+	GIT_MOD_RUN_COMMAND,
+	NULL
+)
+#	define git_run_command_ctx		((struct __git_run_command_ctx_t *)vsf_git_ctx(git_run_command))
+#	define children_to_clean		(git_run_command_ctx->__children_to_clean)
+#	define installed_child_cleanup_handler	(git_run_command_ctx->__installed_child_cleanup_handler)
+#else
 static struct child_to_clean *children_to_clean;
 static int installed_child_cleanup_handler;
+#endif
 
 static void cleanup_children(int sig, int in_signal)
 {
@@ -1037,10 +1059,17 @@ int run_command_v_opt_cd_env_tr2(const char **argv, int opt, const char *dir,
 }
 
 #ifndef NO_PTHREADS
+#ifdef __VSF__
+#	define main_thread				(git_run_command_ctx->__main_thread)
+#	define main_thread_set			(git_run_command_ctx->__main_thread_set)
+#	define async_key				(git_run_command_ctx->__async_key)
+#	define async_die_counter		(git_run_command_ctx->__async_die_counter)
+#else
 static pthread_t main_thread;
 static int main_thread_set;
 static pthread_key_t async_key;
 static pthread_key_t async_die_counter;
+#endif
 
 static void *run_thread(void *data)
 {
@@ -1556,7 +1585,11 @@ static void kill_children(struct parallel_processes *pp, int signo)
 			kill(pp->children[i].process.pid, signo);
 }
 
+#ifdef __VSF__
+#	define pp_for_signal			(git_run_command_ctx->__pp_for_signal)
+#else
 static struct parallel_processes *pp_for_signal;
+#endif
 
 static void handle_children_on_signal(int signo)
 {

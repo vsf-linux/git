@@ -43,8 +43,8 @@ extern const struct refspec_item *tag_refspec;
 #define REFSPEC_FETCH 1
 #define REFSPEC_PUSH 0
 
-#define REFSPEC_INIT_FETCH { .fetch = REFSPEC_FETCH }
-#define REFSPEC_INIT_PUSH { .fetch = REFSPEC_PUSH }
+#define REFSPEC_INIT_FETCH (struct refspec){ .fetch = REFSPEC_FETCH }
+#define REFSPEC_INIT_PUSH (struct refspec){ .fetch = REFSPEC_PUSH }
 
 /**
  * An array of strings can be parsed into a struct refspec using

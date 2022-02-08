@@ -46,27 +46,129 @@ enum {
 	TAGS_SET = 2
 };
 
+#ifdef __VSF__
+struct __git_builtin_fetch_ctx_t {
+	int __fetch_prune_config;		// = -1;
+	int __fetch_show_forced_updates;// = 1;
+	uint64_t __forced_updates_ms;
+	int __prefetch;
+	int ____prune;					// = -1;
+	int __fetch_prune_tags_config;	// = -1;
+	int ____prune_tags;				// = -1;
+	int __all, __append, __dry_run, ____force, __keep, __multiple, __update_head_ok;
+	int __write_fetch_head;			// = 1;
+	int __verbosity, __deepen_relative, __set_upstream;
+	int __progress;					// = -1;
+	int __enable_auto_gc;			// = 1;
+	int ____tags;					// = TAGS_DEFAULT;
+	int __unshallow, __update_shallow, ____deepen;
+	int __max_jobs;					// = -1;
+	int __submodule_fetch_jobs_config;	// = -1;
+	int __fetch_parallel_config;	// = 1;
+	int __atomic_fetch;
+	enum transport_family ____family;
+	const char *__depth;
+	const char *__deepen_since;
+	const char *__upload_pack;
+	struct string_list __deepen_not;	// = STRING_LIST_INIT_NODUP;
+	struct strbuf __default_rla;	// = STRBUF_INIT;
+	struct transport *__gtransport;
+	struct transport *__gsecondary;
+	const char *__submodule_prefix;
+	int __recurse_submodules;		// = RECURSE_SUBMODULES_DEFAULT;
+	int __recurse_submodules_default;	// = RECURSE_SUBMODULES_ON_DEMAND;
+	int __shown_url;
+	struct refspec __refmap;		// = REFSPEC_INIT_FETCH;
+	struct list_objects_filter_options __filter_options;
+	struct string_list ____server_options;	// = STRING_LIST_INIT_DUP;
+	struct string_list __negotiation_tip;	// = STRING_LIST_INIT_NODUP;
+	int ____fetch_write_commit_graph;	// = -1;
+	int __stdin_refspecs;
+	int __negotiate_only;
+	struct option __builtin_fetch_options[41];
+	int __refcol_width;				// = 10;
+	int __compact_format;
+};
+static void __git_builtin_fetch_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_fetch,
+	sizeof(struct __git_builtin_fetch_ctx_t),
+	GIT_MOD_BUILTIN_FETCH,
+	__git_builtin_fetch_mod_init
+)
+#	define git_builtin_fetch_ctx	((struct __git_builtin_fetch_ctx_t *)vsf_git_ctx(git_builtin_fetch))
+#	define fetch_prune_config		(git_builtin_fetch_ctx->__fetch_prune_config)
+#	define fetch_show_forced_updates	(git_builtin_fetch_ctx->__fetch_show_forced_updates)
+#	define forced_updates_ms		(git_builtin_fetch_ctx->__forced_updates_ms)
+#	define prefetch					(git_builtin_fetch_ctx->__prefetch)
+#	define __prune					(git_builtin_fetch_ctx->____prune)
+#	define fetch_prune_tags_config	(git_builtin_fetch_ctx->__fetch_prune_tags_config)
+#	define __prune_tags				(git_builtin_fetch_ctx->____prune_tags)
+#	define all						(git_builtin_fetch_ctx->__all)
+#	define append					(git_builtin_fetch_ctx->__append)
+#	define dry_run					(git_builtin_fetch_ctx->__dry_run)
+#	define __force					(git_builtin_fetch_ctx->____force)
+#	define keep						(git_builtin_fetch_ctx->__keep)
+#	define multiple					(git_builtin_fetch_ctx->__multiple)
+#	define update_head_ok			(git_builtin_fetch_ctx->__update_head_ok)
+#	define write_fetch_head			(git_builtin_fetch_ctx->__write_fetch_head)
+#	define verbosity				(git_builtin_fetch_ctx->__verbosity)
+#	define deepen_relative			(git_builtin_fetch_ctx->__deepen_relative)
+#	define set_upstream				(git_builtin_fetch_ctx->__set_upstream)
+#	define progress					(git_builtin_fetch_ctx->__progress)
+#	define enable_auto_gc			(git_builtin_fetch_ctx->__enable_auto_gc)
+#	define __tags					(git_builtin_fetch_ctx->____tags)
+#	define unshallow				(git_builtin_fetch_ctx->__unshallow)
+#	define update_shallow			(git_builtin_fetch_ctx->__update_shallow)
+#	define __deepen					(git_builtin_fetch_ctx->____deepen)
+#	define max_jobs					(git_builtin_fetch_ctx->__max_jobs)
+#	define submodule_fetch_jobs_config	(git_builtin_fetch_ctx->__submodule_fetch_jobs_config)
+#	define fetch_parallel_config	(git_builtin_fetch_ctx->__fetch_parallel_config)
+#	define atomic_fetch				(git_builtin_fetch_ctx->__atomic_fetch)
+#	define __family					(git_builtin_fetch_ctx->____family)
+#	define depth					(git_builtin_fetch_ctx->__depth)
+#	define deepen_since				(git_builtin_fetch_ctx->__deepen_since)
+#	define upload_pack				(git_builtin_fetch_ctx->__upload_pack)
+#	define deepen_not				(git_builtin_fetch_ctx->__deepen_not)
+#	define default_rla				(git_builtin_fetch_ctx->__default_rla)
+#	define gtransport				(git_builtin_fetch_ctx->__gtransport)
+#	define gsecondary				(git_builtin_fetch_ctx->__gsecondary)
+#	define submodule_prefix			(git_builtin_fetch_ctx->__submodule_prefix)
+#	define recurse_submodules		(git_builtin_fetch_ctx->__recurse_submodules)
+#	define recurse_submodules_default	(git_builtin_fetch_ctx->__recurse_submodules_default)
+#	define shown_url				(git_builtin_fetch_ctx->__shown_url)
+#	define refmap					(git_builtin_fetch_ctx->__refmap)
+#	define filter_options			(git_builtin_fetch_ctx->__filter_options)
+#	define __server_options			(git_builtin_fetch_ctx->____server_options)
+#	define negotiation_tip			(git_builtin_fetch_ctx->__negotiation_tip)
+#	define __fetch_write_commit_graph	(git_builtin_fetch_ctx->____fetch_write_commit_graph)
+#	define stdin_refspecs			(git_builtin_fetch_ctx->__stdin_refspecs)
+#	define negotiate_only			(git_builtin_fetch_ctx->__negotiate_only)
+#else
 static int fetch_prune_config = -1; /* unspecified */
 static int fetch_show_forced_updates = 1;
 static uint64_t forced_updates_ms = 0;
 static int prefetch = 0;
-static int prune = -1; /* unspecified */
+static int __prune = -1; /* unspecified */
+#endif
 #define PRUNE_BY_DEFAULT 0 /* do we prune by default? */
 
+#ifndef __VSF__
 static int fetch_prune_tags_config = -1; /* unspecified */
-static int prune_tags = -1; /* unspecified */
+static int __prune_tags = -1; /* unspecified */
+#endif
 #define PRUNE_TAGS_BY_DEFAULT 0 /* do we prune tags by default? */
 
-static int all, append, dry_run, force, keep, multiple, update_head_ok;
+#ifndef __VSF__
+static int all, append, dry_run, __force, keep, multiple, update_head_ok;
 static int write_fetch_head = 1;
 static int verbosity, deepen_relative, set_upstream;
 static int progress = -1;
 static int enable_auto_gc = 1;
-static int tags = TAGS_DEFAULT, unshallow, update_shallow, deepen;
+static int __tags = TAGS_DEFAULT, unshallow, update_shallow, __deepen;
 static int max_jobs = -1, submodule_fetch_jobs_config = -1;
 static int fetch_parallel_config = 1;
 static int atomic_fetch;
-static enum transport_family family;
+static enum transport_family __family;
 static const char *depth;
 static const char *deepen_since;
 static const char *upload_pack;
@@ -80,11 +182,12 @@ static int recurse_submodules_default = RECURSE_SUBMODULES_ON_DEMAND;
 static int shown_url = 0;
 static struct refspec refmap = REFSPEC_INIT_FETCH;
 static struct list_objects_filter_options filter_options;
-static struct string_list server_options = STRING_LIST_INIT_DUP;
+static struct string_list __server_options = STRING_LIST_INIT_DUP;
 static struct string_list negotiation_tip = STRING_LIST_INIT_NODUP;
-static int fetch_write_commit_graph = -1;
+static int __fetch_write_commit_graph = -1;
 static int stdin_refspecs = 0;
 static int negotiate_only;
+#endif
 
 static int git_fetch_config(const char *k, const char *v, void *cb)
 {
@@ -140,7 +243,37 @@ static int parse_refmap_arg(const struct option *opt, const char *arg, int unset
 	return 0;
 }
 
+#ifdef __VSF__
+#	define builtin_fetch_options	(git_builtin_fetch_ctx->__builtin_fetch_options)
+static void __git_builtin_fetch_mod_init(void *ctx)
+{
+	struct __git_builtin_fetch_ctx_t *__git_builtin_fetch_ctx = ctx;
+	__git_builtin_fetch_ctx->__fetch_prune_config = -1;
+	__git_builtin_fetch_ctx->__fetch_show_forced_updates = 1;
+	__git_builtin_fetch_ctx->____prune = -1;
+	__git_builtin_fetch_ctx->__fetch_prune_tags_config = -1;
+	__git_builtin_fetch_ctx->____prune_tags = -1;
+	__git_builtin_fetch_ctx->__write_fetch_head = 1;
+	__git_builtin_fetch_ctx->__progress = -1;
+	__git_builtin_fetch_ctx->__enable_auto_gc = 1;
+	__git_builtin_fetch_ctx->____tags = TAGS_DEFAULT;
+	__git_builtin_fetch_ctx->__max_jobs = -1;
+	__git_builtin_fetch_ctx->__submodule_fetch_jobs_config = -1;
+	__git_builtin_fetch_ctx->__fetch_parallel_config = 1;
+	__git_builtin_fetch_ctx->__deepen_not = STRING_LIST_INIT_NODUP;
+	__git_builtin_fetch_ctx->__default_rla = STRBUF_INIT;
+	__git_builtin_fetch_ctx->__recurse_submodules = RECURSE_SUBMODULES_DEFAULT;
+	__git_builtin_fetch_ctx->__recurse_submodules_default = RECURSE_SUBMODULES_ON_DEMAND;
+	__git_builtin_fetch_ctx->__refmap = REFSPEC_INIT_FETCH;
+	__git_builtin_fetch_ctx->____server_options = STRING_LIST_INIT_DUP;
+	__git_builtin_fetch_ctx->__negotiation_tip = STRING_LIST_INIT_NODUP;
+	__git_builtin_fetch_ctx->____fetch_write_commit_graph = -1;
+	__git_builtin_fetch_ctx->__refcol_width = 10;
+
+struct option __builtin_fetch_options[] = {
+#else
 static struct option builtin_fetch_options[] = {
+#endif
 	OPT__VERBOSITY(&verbosity),
 	OPT_BOOL(0, "all", &all,
 		 N_("fetch from all remotes")),
@@ -152,20 +285,20 @@ static struct option builtin_fetch_options[] = {
 		 N_("use atomic transaction to update references")),
 	OPT_STRING(0, "upload-pack", &upload_pack, N_("path"),
 		   N_("path to upload pack on remote end")),
-	OPT__FORCE(&force, N_("force overwrite of local reference"), 0),
+	OPT__FORCE(&__force, N_("force overwrite of local reference"), 0),
 	OPT_BOOL('m', "multiple", &multiple,
 		 N_("fetch from multiple remotes")),
-	OPT_SET_INT('t', "tags", &tags,
+	OPT_SET_INT('t', "tags", &__tags,
 		    N_("fetch all tags and associated objects"), TAGS_SET),
-	OPT_SET_INT('n', NULL, &tags,
+	OPT_SET_INT('n', NULL, &__tags,
 		    N_("do not fetch all tags (--no-tags)"), TAGS_UNSET),
 	OPT_INTEGER('j', "jobs", &max_jobs,
 		    N_("number of submodules fetched in parallel")),
 	OPT_BOOL(0, "prefetch", &prefetch,
 		 N_("modify the refspec to place all refs within refs/prefetch/")),
-	OPT_BOOL('p', "prune", &prune,
+	OPT_BOOL('p', "prune", &__prune,
 		 N_("prune remote-tracking branches no longer on remote")),
-	OPT_BOOL('P', "prune-tags", &prune_tags,
+	OPT_BOOL('P', "prune-tags", &__prune_tags,
 		 N_("prune local tags no longer on remote and clobber changed tags")),
 	OPT_CALLBACK_F(0, "recurse-submodules", &recurse_submodules, N_("on-demand"),
 		    N_("control recursive fetching of submodules"),
@@ -200,10 +333,10 @@ static struct option builtin_fetch_options[] = {
 		 N_("accept refs that update .git/shallow")),
 	OPT_CALLBACK_F(0, "refmap", NULL, N_("refmap"),
 		       N_("specify fetch refmap"), PARSE_OPT_NONEG, parse_refmap_arg),
-	OPT_STRING_LIST('o', "server-option", &server_options, N_("server-specific"), N_("option to transmit")),
-	OPT_SET_INT('4', "ipv4", &family, N_("use IPv4 addresses only"),
+	OPT_STRING_LIST('o', "server-option", &__server_options, N_("server-specific"), N_("option to transmit")),
+	OPT_SET_INT('4', "ipv4", &__family, N_("use IPv4 addresses only"),
 			TRANSPORT_FAMILY_IPV4),
-	OPT_SET_INT('6', "ipv6", &family, N_("use IPv6 addresses only"),
+	OPT_SET_INT('6', "ipv6", &__family, N_("use IPv6 addresses only"),
 			TRANSPORT_FAMILY_IPV6),
 	OPT_STRING_LIST(0, "negotiation-tip", &negotiation_tip, N_("revision"),
 			N_("report that we have only objects reachable from this object")),
@@ -216,12 +349,20 @@ static struct option builtin_fetch_options[] = {
 		 N_("run 'maintenance --auto' after fetching")),
 	OPT_BOOL(0, "show-forced-updates", &fetch_show_forced_updates,
 		 N_("check for forced-updates on all updated branches")),
-	OPT_BOOL(0, "write-commit-graph", &fetch_write_commit_graph,
+	OPT_BOOL(0, "write-commit-graph", &__fetch_write_commit_graph,
 		 N_("write the commit-graph after fetching")),
 	OPT_BOOL(0, "stdin", &stdin_refspecs,
 		 N_("accept refspecs from stdin")),
 	OPT_END()
 };
+#ifdef __VSF__
+	if (dimof(__builtin_fetch_options) > dimof(__git_builtin_fetch_ctx->__builtin_fetch_options)) {
+		vsf_trace_error("__builtin_fetch_options MUST be larger than %d\n", dimof(__builtin_fetch_options));
+		VSF_LINUX_ASSERT(false);
+	}
+    memcpy(__git_builtin_fetch_ctx->__builtin_fetch_options, __builtin_fetch_options, sizeof(__builtin_fetch_options));
+}
+#endif
 
 static void unlock_pack(unsigned int flags)
 {
@@ -710,8 +851,13 @@ out:
 	return ret;
 }
 
+#ifdef __VSF__
+#	define refcol_width				(git_builtin_fetch_ctx->__refcol_width)
+#	define compact_format			(git_builtin_fetch_ctx->__compact_format)
+#else
 static int refcol_width = 10;
 static int compact_format;
+#endif
 
 static void adjust_refcol_width(const struct ref *ref)
 {
@@ -890,7 +1036,7 @@ static int update_local_ref(struct ref *ref,
 
 	if (!is_null_oid(&ref->old_oid) &&
 	    starts_with(ref->name, "refs/tags/")) {
-		if (force || ref->force) {
+		if (__force || ref->force) {
 			int r;
 			r = s_update_ref("updating tag", ref, transaction, 0);
 			format_display(display, r ? '!' : 't', _("[tag update]"),
@@ -957,7 +1103,7 @@ static int update_local_ref(struct ref *ref,
 			       remote, pretty_ref, summary_width);
 		strbuf_release(&quickref);
 		return r;
-	} else if (force || ref->force) {
+	} else if (__force || ref->force) {
 		struct strbuf quickref = STRBUF_INIT;
 		int r;
 		strbuf_add_unique_abbrev(&quickref, &current->object.oid, DEFAULT_ABBREV);
@@ -1289,7 +1435,7 @@ static int check_exist_and_connected(struct ref *ref_map)
 	 * really need to perform.  Claiming failure now will ensure
 	 * we perform the network exchange to deepen our history.
 	 */
-	if (deepen)
+	if (__deepen)
 		return -1;
 
 	/*
@@ -1471,7 +1617,7 @@ static struct transport *prepare_transport(struct remote *remote, int deepen)
 
 	transport = transport_get(remote, NULL);
 	transport_set_verbosity(transport, verbosity, progress);
-	transport->family = family;
+	transport->family = __family;
 	if (upload_pack)
 		set_option(transport, TRANS_OPT_UPLOADPACK, upload_pack);
 	if (keep)
@@ -1544,11 +1690,11 @@ static int do_fetch(struct transport *transport,
 	int must_list_refs = 1;
 	struct worktree **worktrees = get_worktrees();
 
-	if (tags == TAGS_DEFAULT) {
+	if (__tags == TAGS_DEFAULT) {
 		if (transport->remote->fetch_tags == 2)
-			tags = TAGS_SET;
+			__tags = TAGS_SET;
 		if (transport->remote->fetch_tags == -1)
-			tags = TAGS_UNSET;
+			__tags = TAGS_UNSET;
 	}
 
 	/* if not appending, truncate FETCH_HEAD */
@@ -1578,7 +1724,7 @@ static int do_fetch(struct transport *transport,
 		refspec_ref_prefixes(&transport->remote->fetch,
 				     &transport_ls_refs_options.ref_prefixes);
 
-	if (tags == TAGS_SET || tags == TAGS_DEFAULT) {
+	if (__tags == TAGS_SET || __tags == TAGS_DEFAULT) {
 		must_list_refs = 1;
 		if (transport_ls_refs_options.ref_prefixes.nr)
 			strvec_push(&transport_ls_refs_options.ref_prefixes,
@@ -1596,13 +1742,13 @@ static int do_fetch(struct transport *transport,
 	strvec_clear(&transport_ls_refs_options.ref_prefixes);
 
 	ref_map = get_ref_map(transport->remote, remote_refs, rs,
-			      tags, &autotags);
+			      __tags, &autotags);
 	if (!update_head_ok)
 		check_not_current_branch(ref_map, worktrees);
 
-	if (tags == TAGS_DEFAULT && autotags)
+	if (__tags == TAGS_DEFAULT && autotags)
 		transport_set_option(transport, TRANS_OPT_FOLLOWTAGS, "1");
-	if (prune) {
+	if (__prune) {
 		/*
 		 * We only prune based on refspecs specified
 		 * explicitly (via command line or configuration); we
@@ -1680,7 +1826,7 @@ skip:
 
 	/* if neither --no-tags nor --tags was specified, do automated tag
 	 * following ... */
-	if (tags == TAGS_DEFAULT && autotags) {
+	if (__tags == TAGS_DEFAULT && autotags) {
 		struct ref **tail = &ref_map;
 		ref_map = NULL;
 		find_non_local_tags(remote_refs, &ref_map, &tail);
@@ -1746,13 +1892,13 @@ static void add_options_to_argv(struct strvec *argv)
 {
 	if (dry_run)
 		strvec_push(argv, "--dry-run");
-	if (prune != -1)
-		strvec_push(argv, prune ? "--prune" : "--no-prune");
-	if (prune_tags != -1)
-		strvec_push(argv, prune_tags ? "--prune-tags" : "--no-prune-tags");
+	if (__prune != -1)
+		strvec_push(argv, __prune ? "--prune" : "--no-prune");
+	if (__prune_tags != -1)
+		strvec_push(argv, __prune_tags ? "--prune-tags" : "--no-prune-tags");
 	if (update_head_ok)
 		strvec_push(argv, "--update-head-ok");
-	if (force)
+	if (__force)
 		strvec_push(argv, "--force");
 	if (keep)
 		strvec_push(argv, "--keep");
@@ -1760,9 +1906,9 @@ static void add_options_to_argv(struct strvec *argv)
 		strvec_push(argv, "--recurse-submodules");
 	else if (recurse_submodules == RECURSE_SUBMODULES_ON_DEMAND)
 		strvec_push(argv, "--recurse-submodules=on-demand");
-	if (tags == TAGS_SET)
+	if (__tags == TAGS_SET)
 		strvec_push(argv, "--tags");
-	else if (tags == TAGS_UNSET)
+	else if (__tags == TAGS_UNSET)
 		strvec_push(argv, "--no-tags");
 	if (verbosity >= 2)
 		strvec_push(argv, "-v");
@@ -1770,9 +1916,9 @@ static void add_options_to_argv(struct strvec *argv)
 		strvec_push(argv, "-v");
 	else if (verbosity < 0)
 		strvec_push(argv, "-q");
-	if (family == TRANSPORT_FAMILY_IPV4)
+	if (__family == TRANSPORT_FAMILY_IPV4)
 		strvec_push(argv, "--ipv4");
-	else if (family == TRANSPORT_FAMILY_IPV6)
+	else if (__family == TRANSPORT_FAMILY_IPV6)
 		strvec_push(argv, "--ipv6");
 }
 
@@ -1932,27 +2078,27 @@ static int fetch_one(struct remote *remote, int argc, const char **argv,
 
 	gtransport = prepare_transport(remote, 1);
 
-	if (prune < 0) {
+	if (__prune < 0) {
 		/* no command line request */
 		if (0 <= remote->prune)
-			prune = remote->prune;
+			__prune = remote->prune;
 		else if (0 <= fetch_prune_config)
-			prune = fetch_prune_config;
+			__prune = fetch_prune_config;
 		else
-			prune = PRUNE_BY_DEFAULT;
+			__prune = PRUNE_BY_DEFAULT;
 	}
 
-	if (prune_tags < 0) {
+	if (__prune_tags < 0) {
 		/* no command line request */
 		if (0 <= remote->prune_tags)
-			prune_tags = remote->prune_tags;
+			__prune_tags = remote->prune_tags;
 		else if (0 <= fetch_prune_tags_config)
-			prune_tags = fetch_prune_tags_config;
+			__prune_tags = fetch_prune_tags_config;
 		else
-			prune_tags = PRUNE_TAGS_BY_DEFAULT;
+			__prune_tags = PRUNE_TAGS_BY_DEFAULT;
 	}
 
-	maybe_prune_tags = prune_tags_ok && prune_tags;
+	maybe_prune_tags = prune_tags_ok && __prune_tags;
 	if (maybe_prune_tags && remote_via_config)
 		refspec_append(&remote->fetch, TAG_REFSPEC);
 
@@ -1979,8 +2125,8 @@ static int fetch_one(struct remote *remote, int argc, const char **argv,
 		strbuf_release(&line);
 	}
 
-	if (server_options.nr)
-		gtransport->server_options = &server_options;
+	if (__server_options.nr)
+		gtransport->server_options = &__server_options;
 
 	sigchain_push_common(unlock_pack_on_signal);
 	atexit(unlock_pack_atexit);
@@ -2051,7 +2197,7 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	if (depth && atoi(depth) < 1)
 		die(_("depth %s is not a positive number"), depth);
 	if (depth || deepen_since || deepen_not.nr)
-		deepen = 1;
+		__deepen = 1;
 
 	/* FETCH_HEAD never gets updated in --dry-run mode */
 	if (dry_run)
@@ -2102,8 +2248,8 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 			warning(_("protocol does not support --negotiate-only, exiting"));
 			return 1;
 		}
-		if (server_options.nr)
-			gtransport->server_options = &server_options;
+		if (__server_options.nr)
+			gtransport->server_options = &__server_options;
 		result = transport_fetch_refs(gtransport, NULL);
 
 		oidset_iter_init(&acked_commits, &iter);
@@ -2159,8 +2305,8 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	string_list_clear(&list, 0);
 
 	prepare_repo_settings(the_repository);
-	if (fetch_write_commit_graph > 0 ||
-	    (fetch_write_commit_graph < 0 &&
+	if (__fetch_write_commit_graph > 0 ||
+	    (__fetch_write_commit_graph < 0 &&
 	     the_repository->settings.fetch_write_commit_graph)) {
 		int commit_graph_flags = COMMIT_GRAPH_WRITE_SPLIT;
 
