@@ -28,6 +28,52 @@
 /* This flag is set if something points to this object. */
 #define USED      0x0008
 
+#ifdef __VSF__
+struct __git_builtin_fsck_ctx_t {
+	int __show_root;
+	int __show_tags;
+	int __show_unreachable;
+	int __include_reflogs;			// = 1;
+	int __check_full;				// = 1;
+	int __connectivity_only;
+	int __check_strict;
+	int __keep_cache_objects;
+	struct fsck_options __fsck_walk_options;	// = FSCK_OPTIONS_DEFAULT;
+	struct fsck_options __fsck_obj_options;		// = FSCK_OPTIONS_DEFAULT;
+	int __errors_found;
+	int __write_lost_and_found;
+	int __verbose;
+	int __show_progress;			// = -1;
+	int __show_dangling;			// = 1;
+	int __name_objects;
+	struct object_array __pending;
+	int __default_refs;
+	struct option __fsck_opts[14];
+};
+static void __git_builtin_fsck_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_fsck,
+	sizeof(struct __git_builtin_fsck_ctx_t),
+	GIT_MOD_BUILTIN_FSCK,
+	__git_builtin_fsck_mod_init
+)
+#	define git_builtin_fsck_ctx		((struct __git_builtin_fsck_ctx_t *)vsf_git_ctx(git_builtin_fsck))
+#	define show_root				(git_builtin_fsck_ctx->__show_root)
+#	define show_tags				(git_builtin_fsck_ctx->__show_tags)
+#	define show_unreachable			(git_builtin_fsck_ctx->__show_unreachable)
+#	define include_reflogs			(git_builtin_fsck_ctx->__include_reflogs)
+#	define check_full				(git_builtin_fsck_ctx->__check_full)
+#	define connectivity_only		(git_builtin_fsck_ctx->__connectivity_only)
+#	define check_strict				(git_builtin_fsck_ctx->__check_strict)
+#	define keep_cache_objects		(git_builtin_fsck_ctx->__keep_cache_objects)
+#	define fsck_walk_options		(git_builtin_fsck_ctx->__fsck_walk_options)
+#	define fsck_obj_options			(git_builtin_fsck_ctx->__fsck_obj_options)
+#	define errors_found				(git_builtin_fsck_ctx->__errors_found)
+#	define write_lost_and_found		(git_builtin_fsck_ctx->__write_lost_and_found)
+#	define verbose					(git_builtin_fsck_ctx->__verbose)
+#	define show_progress			(git_builtin_fsck_ctx->__show_progress)
+#	define show_dangling			(git_builtin_fsck_ctx->__show_dangling)
+#	define name_objects				(git_builtin_fsck_ctx->__name_objects)
+#else
 static int show_root;
 static int show_tags;
 static int show_unreachable;
@@ -44,6 +90,7 @@ static int verbose;
 static int show_progress = -1;
 static int show_dangling = 1;
 static int name_objects;
+#endif
 #define ERROR_OBJECT 01
 #define ERROR_REACHABLE 02
 #define ERROR_PACK 04
@@ -107,7 +154,11 @@ static int fsck_error_func(struct fsck_options *o,
 	}
 }
 
+#ifdef __VSF__
+#	define pending					(git_builtin_fsck_ctx->__pending)
+#else
 static struct object_array pending;
+#endif
 
 static int mark_object(struct object *obj, enum object_type type,
 		       void *data, struct fsck_options *options)
@@ -462,7 +513,11 @@ static int fsck_obj_buffer(const struct object_id *oid, enum object_type type,
 	return fsck_obj(obj, buffer, size);
 }
 
+#ifdef __VSF__
+#	define default_refs				(git_builtin_fsck_ctx->__default_refs)
+#else
 static int default_refs;
+#endif
 
 static void fsck_handle_reflog_oid(const char *refname, struct object_id *oid,
 	timestamp_t timestamp)
@@ -785,7 +840,21 @@ static char const * const fsck_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+#	define fsck_opts				(git_builtin_fsck_ctx->__fsck_opts)
+static void __git_builtin_fsck_mod_init(void *ctx)
+{
+    struct __git_builtin_fsck_ctx_t *__git_builtin_fsck_ctx = ctx;
+    __git_builtin_fsck_ctx->__include_reflogs = 1;
+	__git_builtin_fsck_ctx->__check_full = 1;
+	__git_builtin_fsck_ctx->__fsck_walk_options = FSCK_OPTIONS_DEFAULT;
+	__git_builtin_fsck_ctx->__fsck_obj_options = FSCK_OPTIONS_DEFAULT;
+	__git_builtin_fsck_ctx->__show_progress = -1;
+	__git_builtin_fsck_ctx->__show_dangling = 1;
+struct option __fsck_opts[] = {
+#else
 static struct option fsck_opts[] = {
+#endif
 	OPT__VERBOSE(&verbose, N_("be verbose")),
 	OPT_BOOL(0, "unreachable", &show_unreachable, N_("show unreachable objects")),
 	OPT_BOOL(0, "dangling", &show_dangling, N_("show dangling objects")),
@@ -802,6 +871,14 @@ static struct option fsck_opts[] = {
 	OPT_BOOL(0, "name-objects", &name_objects, N_("show verbose names for reachable objects")),
 	OPT_END(),
 };
+#ifdef __VSF__
+	if (dimof(__fsck_opts) > dimof(__git_builtin_fsck_ctx->__fsck_opts)) {
+		vsf_trace_error("increase size of __fsck_opts to %d\n", dimof(__fsck_opts));
+		VSF_LINUX_ASSERT(false);
+	}
+	memcpy(__git_builtin_fsck_ctx->__fsck_opts, __fsck_opts, sizeof(__fsck_opts));
+}
+#endif
 
 int cmd_fsck(int argc, const char **argv, const char *prefix)
 {

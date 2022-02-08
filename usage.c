@@ -6,6 +6,35 @@
 #include "git-compat-util.h"
 #include "cache.h"
 
+#ifdef __VSF__
+struct __git_usage_ctx_t {
+	int __init_is_bare_repository;
+	int __init_shared_repository;	// = -1;
+	struct {
+		int __dying;
+		int __recursion_limit;		// = 1024;
+	} die_is_recursing_builtin;
+	NORETURN_PTR report_fn __usage_routine;	// = usage_builtin;
+	NORETURN_PTR report_fn __die_routine;	// = die_builtin;
+	report_fn __die_message_routine;		// = die_message_builtin;
+	report_fn __error_routine;		// = error_builtin;
+	report_fn __warn_routine;		// = warn_builtin;
+	int (*__die_is_recursing)(void);// = die_is_recursing_builtin;
+	struct {
+		int __in_bug;
+	} BUG_vfl;
+};
+static void __git_usage_mod_init(void *ctx);
+define_vsf_git_mod(git_usage,
+	sizeof(struct __git_usage_ctx_t),
+	GIT_MOD_USAGE,
+	__git_usage_mod_init
+)
+#	define git_usage_ctx			((struct __git_usage_ctx_t *)vsf_git_ctx(git_usage))
+#	define init_is_bare_repository	(git_usage_ctx->__)
+#	define init_shared_repository	(git_usage_ctx->__)
+#endif
+
 static void vreportf(const char *prefix, const char *err, va_list params)
 {
 	char msg[4096];
@@ -90,6 +119,10 @@ static void warn_builtin(const char *warn, va_list params)
 
 static int die_is_recursing_builtin(void)
 {
+#ifdef __VSF__
+#	define dying					(git_usage_ctx->die_is_recursing_builtin.__dying)
+#	define recursion_limit			(git_usage_ctx->die_is_recursing_builtin.__recursion_limit)
+#else
 	static int dying;
 	/*
 	 * Just an arbitrary number X where "a < x < b" where "a" is
@@ -98,6 +131,7 @@ static int die_is_recursing_builtin(void)
 	 * prevent infinite recursion.
 	 */
 	static const int recursion_limit = 1024;
+#endif
 
 	dying++;
 	if (dying > recursion_limit) {
@@ -108,16 +142,41 @@ static int die_is_recursing_builtin(void)
 	} else {
 		return 0;
 	}
+#ifdef __VSF__
+#	undef dying
+#	undef recursion_limit
+#endif
 }
 
 /* If we are in a dlopen()ed .so write to a global variable would segfault
  * (ugh), so keep things static. */
+#ifdef __VSF__
+static void __git_usage_mod_init(void *ctx)
+{
+	struct __git_usage_ctx_t *__git_usage_ctx = ctx;
+	__git_usage_ctx->__init_shared_repository = -1;
+	__git_usage_ctx->die_is_recursing_builtin.__recursion_limit = 1024;
+	__git_usage_ctx->__usage_routine = usage_builtin;
+	__git_usage_ctx->__die_routine = die_builtin;
+	__git_usage_ctx->__die_message_routine = die_message_builtin;
+	__git_usage_ctx->__error_routine = error_builtin;
+	__git_usage_ctx->__warn_routine = warn_builtin;
+	__git_usage_ctx->__die_is_recursing = die_is_recursing_builtin;
+}
+#	define usage_routine			(git_usage_ctx->__usage_routine)
+#	define die_routine				(git_usage_ctx->__die_routine)
+#	define die_message_routine		(git_usage_ctx->__die_message_routine)
+#	define error_routine			(git_usage_ctx->__error_routine)
+#	define warn_routine				(git_usage_ctx->__warn_routine)
+#	define die_is_recursing			(git_usage_ctx->__die_is_recursing)
+#else
 static NORETURN_PTR report_fn usage_routine = usage_builtin;
 static NORETURN_PTR report_fn die_routine = die_builtin;
 static report_fn die_message_routine = die_message_builtin;
 static report_fn error_routine = error_builtin;
 static report_fn warn_routine = warn_builtin;
 static int (*die_is_recursing)(void) = die_is_recursing_builtin;
+#endif
 
 void set_die_routine(NORETURN_PTR report_fn routine)
 {
@@ -294,7 +353,11 @@ static NORETURN void BUG_vfl(const char *file, int line, const char *fmt, va_lis
 {
 	char prefix[256];
 	va_list params_copy;
+#ifdef __VSF__
+#	define in_bug					(git_usage_ctx->BUG_vfl.__in_bug)
+#else
 	static int in_bug;
+#endif
 
 	va_copy(params_copy, params);
 
@@ -315,6 +378,9 @@ static NORETURN void BUG_vfl(const char *file, int line, const char *fmt, va_lis
 	if (BUG_exit_code)
 		exit(BUG_exit_code);
 	abort();
+#ifdef __VSF__
+#	undef in_bug
+#endif
 }
 
 #ifdef HAVE_VARIADIC_MACROS

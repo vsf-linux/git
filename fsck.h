@@ -132,19 +132,19 @@ struct fsck_options {
 	kh_oid_map_t *object_names;
 };
 
-#define FSCK_OPTIONS_DEFAULT { \
+#define FSCK_OPTIONS_DEFAULT (struct fsck_options){ \
 	.skiplist = OIDSET_INIT, \
 	.gitmodules_found = OIDSET_INIT, \
 	.gitmodules_done = OIDSET_INIT, \
 	.error_func = fsck_error_function \
 }
-#define FSCK_OPTIONS_STRICT { \
+#define FSCK_OPTIONS_STRICT (struct fsck_options){ \
 	.strict = 1, \
 	.gitmodules_found = OIDSET_INIT, \
 	.gitmodules_done = OIDSET_INIT, \
 	.error_func = fsck_error_function, \
 }
-#define FSCK_OPTIONS_MISSING_GITMODULES { \
+#define FSCK_OPTIONS_MISSING_GITMODULES (struct fsck_options){ \
 	.strict = 1, \
 	.gitmodules_found = OIDSET_INIT, \
 	.gitmodules_done = OIDSET_INIT, \

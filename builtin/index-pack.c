@@ -83,8 +83,13 @@ static LIST_HEAD(done_head);
  * base_cache_used is guarded by work_mutex, and base_cache_limit is read-only
  * in a thread.
  */
+#ifdef __VSF__
+#	define base_cache_used				(git_builtin_index_pack_ctx->__base_cache_used)
+#	define base_cache_limit				(git_builtin_index_pack_ctx->__base_cache_limit)
+#else
 static size_t base_cache_used;
 static size_t base_cache_limit;
+#endif
 
 struct thread_local {
 	pthread_t thread;
@@ -105,6 +110,104 @@ struct ref_delta_entry {
 	int obj_no;
 };
 
+#ifdef __VSF__
+struct __git_builtin_index_pack_ctx_t {
+	size_t __base_cache_used;
+	size_t __base_cache_limit;
+	struct object_entry *__objects;
+	struct object_stat *__obj_stat;
+	struct ofs_delta_entry *__ofs_deltas;
+	struct ref_delta_entry *__ref_deltas;
+	struct thread_local __nothread_data;
+	int __nr_objects;
+	int __nr_ofs_deltas;
+	int __nr_ref_deltas;
+	int __ref_deltas_alloc;
+	int __nr_resolved_deltas;
+	int __nr_threads;
+	int __from_stdin;
+	int __strict;
+	int __do_fsck_object;
+	struct fsck_options ____fsck_options;	// = FSCK_OPTIONS_MISSING_GITMODULES;
+	int __verbose;
+	const char *__progress_title;
+	int __show_resolving_progress;
+	int __show_stat;
+	int __check_self_contained_and_connected;
+	struct progress *__progress;
+	unsigned char __input_buffer[4096];
+	unsigned int __input_offset, __input_len;
+	off_t __consumed_bytes;
+	off_t __max_input_size;
+	unsigned __deepest_delta;
+	git_hash_ctx __input_ctx;
+	uint32_t __input_crc32;
+	int __input_fd, __output_fd;
+	const char *____curr_pack;
+	struct thread_local *__thread_data;
+	int __nr_dispatched;
+	int __threads_active;
+	pthread_mutex_t __read_mutex;
+	pthread_mutex_t __counter_mutex;
+	pthread_mutex_t __work_mutex;
+	pthread_mutex_t __deepest_delta_mutex;
+	pthread_key_t __key;
+	struct {
+		char __fixed_buf[8192];
+	} unpack_entry_data;
+};
+static void __git_builtin_index_pack_mod_init(void *ctx)
+{
+	struct __git_builtin_index_pack_ctx_t *__git_builtin_index_pack_ctx = ctx;
+	__git_builtin_index_pack_ctx->____fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
+}
+define_vsf_git_mod(git_builtin_index_pack,
+	sizeof(struct __git_builtin_index_pack_ctx_t),
+	GIT_MOD_BUILTIN_INDEX_PACK,
+	__git_builtin_index_pack_mod_init
+)
+#	define git_builtin_index_pack_ctx	((struct __git_builtin_index_pack_ctx_t *)vsf_git_ctx(git_builtin_index_pack))
+#	define objects						(git_builtin_index_pack_ctx->__objects)
+#	define obj_stat						(git_builtin_index_pack_ctx->__obj_stat)
+#	define ofs_deltas					(git_builtin_index_pack_ctx->__ofs_deltas)
+#	define ref_deltas					(git_builtin_index_pack_ctx->__ref_deltas)
+#	define nothread_data				(git_builtin_index_pack_ctx->__nothread_data)
+#	define nr_objects					(git_builtin_index_pack_ctx->__nr_objects)
+#	define nr_ofs_deltas				(git_builtin_index_pack_ctx->__nr_ofs_deltas)
+#	define nr_ref_deltas				(git_builtin_index_pack_ctx->__nr_ref_deltas)
+#	define ref_deltas_alloc				(git_builtin_index_pack_ctx->__ref_deltas_alloc)
+#	define nr_resolved_deltas			(git_builtin_index_pack_ctx->__nr_resolved_deltas)
+#	define nr_threads					(git_builtin_index_pack_ctx->__nr_threads)
+#	define from_stdin					(git_builtin_index_pack_ctx->__from_stdin)
+#	define strict						(git_builtin_index_pack_ctx->__strict)
+#	define do_fsck_object				(git_builtin_index_pack_ctx->__do_fsck_object)
+#	define __fsck_options				(git_builtin_index_pack_ctx->____fsck_options)
+#	define verbose						(git_builtin_index_pack_ctx->__verbose)
+#	define progress_title				(git_builtin_index_pack_ctx->__progress_title)
+#	define show_resolving_progress		(git_builtin_index_pack_ctx->__show_resolving_progress)
+#	define show_stat					(git_builtin_index_pack_ctx->__show_stat)
+#	define check_self_contained_and_connected	(git_builtin_index_pack_ctx->__check_self_contained_and_connected)
+#	define progress						(git_builtin_index_pack_ctx->__progress)
+#	define input_buffer					(git_builtin_index_pack_ctx->__input_buffer)
+#	define input_offset					(git_builtin_index_pack_ctx->__input_offset)
+#	define input_len					(git_builtin_index_pack_ctx->__input_len)
+#	define consumed_bytes				(git_builtin_index_pack_ctx->__consumed_bytes)
+#	define max_input_size				(git_builtin_index_pack_ctx->__max_input_size)
+#	define deepest_delta				(git_builtin_index_pack_ctx->__deepest_delta)
+#	define input_ctx					(git_builtin_index_pack_ctx->__input_ctx)
+#	define input_crc32					(git_builtin_index_pack_ctx->__input_crc32)
+#	define input_fd						(git_builtin_index_pack_ctx->__input_fd)
+#	define output_fd					(git_builtin_index_pack_ctx->__output_fd)
+#	define __curr_pack					(git_builtin_index_pack_ctx->____curr_pack)
+#	define thread_data					(git_builtin_index_pack_ctx->__thread_data)
+#	define nr_dispatched				(git_builtin_index_pack_ctx->__nr_dispatched)
+#	define threads_active				(git_builtin_index_pack_ctx->__threads_active)
+#	define read_mutex					(git_builtin_index_pack_ctx->__read_mutex)
+#	define counter_mutex				(git_builtin_index_pack_ctx->__counter_mutex)
+#	define work_mutex					(git_builtin_index_pack_ctx->__work_mutex)
+#	define deepest_delta_mutex			(git_builtin_index_pack_ctx->__deepest_delta_mutex)
+#	define key							(git_builtin_index_pack_ctx->__key)
+#else
 static struct object_entry *objects;
 static struct object_stat *obj_stat;
 static struct ofs_delta_entry *ofs_deltas;
@@ -120,7 +223,7 @@ static int nr_threads;
 static int from_stdin;
 static int strict;
 static int do_fsck_object;
-static struct fsck_options fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
+static struct fsck_options __fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
 static int verbose;
 static const char *progress_title;
 static int show_resolving_progress;
@@ -138,29 +241,38 @@ static unsigned deepest_delta;
 static git_hash_ctx input_ctx;
 static uint32_t input_crc32;
 static int input_fd, output_fd;
-static const char *curr_pack;
+static const char *__curr_pack;
 
 static struct thread_local *thread_data;
 static int nr_dispatched;
 static int threads_active;
 
 static pthread_mutex_t read_mutex;
+#endif
 #define read_lock()		lock_mutex(&read_mutex)
 #define read_unlock()		unlock_mutex(&read_mutex)
 
+#ifndef __VSF__
 static pthread_mutex_t counter_mutex;
+#endif
 #define counter_lock()		lock_mutex(&counter_mutex)
 #define counter_unlock()	unlock_mutex(&counter_mutex)
 
+#ifndef __VSF__
 static pthread_mutex_t work_mutex;
+#endif
 #define work_lock()		lock_mutex(&work_mutex)
 #define work_unlock()		unlock_mutex(&work_mutex)
 
+#ifndef __VSF__
 static pthread_mutex_t deepest_delta_mutex;
+#endif
 #define deepest_delta_lock()	lock_mutex(&deepest_delta_mutex)
 #define deepest_delta_unlock()	unlock_mutex(&deepest_delta_mutex)
 
+#ifndef __VSF__
 static pthread_key_t key;
+#endif
 
 static inline void lock_mutex(pthread_mutex_t *mutex)
 {
@@ -188,7 +300,7 @@ static void init_thread(void)
 	pthread_key_create(&key, NULL);
 	CALLOC_ARRAY(thread_data, nr_threads);
 	for (i = 0; i < nr_threads; i++) {
-		thread_data[i].pack_fd = xopen(curr_pack, O_RDONLY);
+		thread_data[i].pack_fd = xopen(__curr_pack, O_RDONLY);
 	}
 
 	threads_active = 1;
@@ -440,7 +552,11 @@ static int is_delta_type(enum object_type type)
 static void *unpack_entry_data(off_t offset, unsigned long size,
 			       enum object_type type, struct object_id *oid)
 {
+#ifdef __VSF__
+#	define fixed_buf				(git_builtin_index_pack_ctx->unpack_entry_data.__fixed_buf)
+#else
 	static char fixed_buf[8192];
+#endif
 	int status;
 	git_zstream stream;
 	void *buf;
@@ -484,6 +600,9 @@ static void *unpack_entry_data(off_t offset, unsigned long size,
 	if (oid)
 		the_hash_algo->final_oid_fn(oid, &c);
 	return buf == fixed_buf ? NULL : buf;
+#ifdef __VSF__
+#	undef fixed_buf
+#endif
 }
 
 static void *unpack_raw_entry(struct object_entry *obj,
@@ -839,7 +958,7 @@ static void sha1_object(const void *data, struct object_entry *obj_entry,
 			else
 				die(_("invalid blob object %s"), oid_to_hex(oid));
 			if (do_fsck_object &&
-			    fsck_object(&blob->object, (void *)data, size, &fsck_options))
+			    fsck_object(&blob->object, (void *)data, size, &__fsck_options))
 				die(_("fsck error in packed object"));
 		} else {
 			struct object *obj;
@@ -858,9 +977,9 @@ static void sha1_object(const void *data, struct object_entry *obj_entry,
 			if (!obj)
 				die(_("invalid %s"), type_name(type));
 			if (do_fsck_object &&
-			    fsck_object(obj, buf, size, &fsck_options))
+			    fsck_object(obj, buf, size, &__fsck_options))
 				die(_("fsck error in packed object"));
-			if (strict && fsck_walk(obj, NULL, &fsck_options))
+			if (strict && fsck_walk(obj, NULL, &__fsck_options))
 				die(_("Not all child objects of %s are reachable"), oid_to_hex(&obj->oid));
 
 			if (obj->type == OBJ_TREE) {
@@ -1734,7 +1853,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 		usage(index_pack_usage);
 
 	read_replace_refs = 0;
-	fsck_options.walk = mark_link;
+	__fsck_options.walk = mark_link;
 
 	reset_pack_idx_option(&opts);
 	git_config(git_index_pack_config, &opts);
@@ -1757,7 +1876,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 			} else if (skip_to_optional_arg(arg, "--strict", &arg)) {
 				strict = 1;
 				do_fsck_object = 1;
-				fsck_set_msg_types(&fsck_options, arg);
+				fsck_set_msg_types(&__fsck_options, arg);
 			} else if (!strcmp(arg, "--check-self-contained-and-connected")) {
 				strict = 1;
 				check_self_contained_and_connected = 1;
@@ -1891,7 +2010,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 			nr_threads = 20; /* hard cap */
 	}
 
-	curr_pack = open_pack_file(pack_name);
+	__curr_pack = open_pack_file(pack_name);
 	parse_pack_header();
 	CALLOC_ARRAY(objects, st_add(nr_objects, 1));
 	if (show_stat)
@@ -1901,7 +2020,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 	if (report_end_of_input)
 		write_in_full(2, "\0", 1);
 	resolve_deltas();
-	conclude_pack(fix_thin_pack, curr_pack, pack_hash);
+	conclude_pack(fix_thin_pack, __curr_pack, pack_hash);
 	free(ofs_deltas);
 	free(ref_deltas);
 	if (strict)
@@ -1921,7 +2040,7 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 	free(idx_objects);
 
 	if (!verify)
-		final(pack_name, curr_pack,
+		final(pack_name, __curr_pack,
 		      index_name, curr_index,
 		      rev_index_name, curr_rev_index,
 		      keep_msg, promisor_msg,
@@ -1929,14 +2048,14 @@ int cmd_index_pack(int argc, const char **argv, const char *prefix)
 	else
 		close(input_fd);
 
-	if (do_fsck_object && fsck_finish(&fsck_options))
+	if (do_fsck_object && fsck_finish(&__fsck_options))
 		die(_("fsck error in pack objects"));
 
 	free(objects);
 	strbuf_release(&index_name_buf);
 	strbuf_release(&rev_index_name_buf);
 	if (pack_name == NULL)
-		free((void *) curr_pack);
+		free((void *) __curr_pack);
 	if (index_name == NULL)
 		free((void *) curr_index);
 	if (rev_index_name == NULL)
