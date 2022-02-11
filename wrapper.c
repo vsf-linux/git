@@ -4,9 +4,27 @@
 #include "cache.h"
 #include "config.h"
 
+#ifdef __VSF__
+struct __git_wrapper_ctx_t {
+	struct {
+		size_t __limit;
+	} memory_limit_check;
+};
+define_vsf_git_mod(git_wrapper,
+	sizeof(struct __git_wrapper_ctx_t),
+	GIT_MOD_WRAPPER,
+	NULL
+)
+#	define git_wrapper_ctx				((struct __git_wrapper_ctx_t *)vsf_git_ctx(git_wrapper))
+#endif
+
 static int memory_limit_check(size_t size, int gentle)
 {
+#ifdef __VSF__
+#	define limit						(git_wrapper_ctx->memory_limit_check.__limit)
+#else
 	static size_t limit = 0;
+#endif
 	if (!limit) {
 		limit = git_env_ulong("GIT_ALLOC_LIMIT", 0);
 		if (!limit)
@@ -22,6 +40,9 @@ static int memory_limit_check(size_t size, int gentle)
 			    (uintmax_t)size, (uintmax_t)limit);
 	}
 	return 0;
+#ifdef __VSF__
+#	undef limit
+#endif
 }
 
 char *xstrdup(const char *str)

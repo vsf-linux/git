@@ -9,7 +9,29 @@ struct chdir_notify_entry {
 	void *data;
 	struct list_head list;
 };
+
+#ifdef __VSF__
+struct __git_chdir_notify_ctx_t {
+	struct list_head __chdir_notify_entries;    // = { &(chdir_notify_entries), &(chdir_notify_entries) }
+};
+static void __git_chdir_notify_mod_init(void *ctx)
+{
+	struct __git_chdir_notify_ctx_t *__git_chdir_notify_ctx = ctx;
+	__git_chdir_notify_ctx->__chdir_notify_entries = (struct list_head) {
+		&__git_chdir_notify_ctx->__chdir_notify_entries,
+		&__git_chdir_notify_ctx->__chdir_notify_entries,
+	};
+}
+define_vsf_git_mod(git_chdir_notify,
+	sizeof(struct __git_chdir_notify_ctx_t),
+	GIT_MOD_CHDIR_NOTIFY,
+	__git_chdir_notify_mod_init
+)
+#	define git_chdir_notify_ctx			((struct __git_chdir_notify_ctx_t *)vsf_git_ctx(git_chdir_notify))
+#	define chdir_notify_entries			(git_chdir_notify_ctx->__chdir_notify_entries)
+#else
 static LIST_HEAD(chdir_notify_entries);
+#endif
 
 void chdir_notify_register(const char *name,
 			   chdir_notify_callback cb,
