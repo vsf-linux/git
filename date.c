@@ -6,6 +6,28 @@
 
 #include "cache.h"
 
+#ifdef __VSF__
+struct __git_date_ctx_t {
+	struct {
+		struct date_mode __mode;
+	} date_mode_from_type;
+	struct {
+		struct strbuf __timebuf;		// = STRBUF_INIT;
+	} show_date;
+};
+static void __git_date_mod_init(void *ctx)
+{
+	struct __git_date_ctx_t *__git_date_ctx = ctx;
+	__git_date_ctx->show_date.__timebuf = STRBUF_INIT;
+}
+define_vsf_git_mod(git_date,
+	sizeof(struct __git_date_ctx_t),
+	GIT_MOD_DATE,
+	__git_date_mod_init
+)
+#	define git_date_ctx					((struct __git_date_ctx_t *)vsf_git_ctx(git_date))
+#endif
+
 /*
  * This is like mktime, but without normalization of tm_wday and tm_yday.
  */
@@ -205,12 +227,19 @@ void show_date_relative(timestamp_t time, struct strbuf *timebuf)
 
 struct date_mode *date_mode_from_type(enum date_mode_type type)
 {
+#ifdef __VSF__
+#	define mode							(git_date_ctx->date_mode_from_type.__mode)
+#else
 	static struct date_mode mode;
+#endif
 	if (type == DATE_STRFTIME)
 		BUG("cannot create anonymous strftime date_mode struct");
 	mode.type = type;
 	mode.local = 0;
 	return &mode;
+#ifdef __VSF__
+#	undef mode
+#endif
 }
 
 static void show_date_normal(struct strbuf *buf, timestamp_t time, struct tm *tm, int tz, struct tm *human_tm, int human_tz, int local)
@@ -286,7 +315,11 @@ const char *show_date(timestamp_t time, int tz, const struct date_mode *mode)
 	struct tm tmbuf = { 0 };
 	struct tm human_tm = { 0 };
 	int human_tz = -1;
+#ifdef __VSF__
+#	define timebuf						(git_date_ctx->show_date.__timebuf)
+#else
 	static struct strbuf timebuf = STRBUF_INIT;
+#endif
 
 	if (mode->type == DATE_UNIX) {
 		strbuf_reset(&timebuf);
@@ -358,6 +391,9 @@ const char *show_date(timestamp_t time, int tz, const struct date_mode *mode)
 	else
 		show_date_normal(&timebuf, time, tm, tz, &human_tm, human_tz, mode->local);
 	return timebuf.buf;
+#ifdef __VSF__
+#	undef timebuf
+#endif
 }
 
 /*

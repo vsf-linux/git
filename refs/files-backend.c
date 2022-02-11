@@ -800,7 +800,7 @@ static int files_ref_iterator_abort(struct ref_iterator *ref_iterator)
 	return ok;
 }
 
-static struct ref_iterator_vtable files_ref_iterator_vtable = {
+static const struct ref_iterator_vtable files_ref_iterator_vtable = {
 	files_ref_iterator_advance,
 	files_ref_iterator_peel,
 	files_ref_iterator_abort

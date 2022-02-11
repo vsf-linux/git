@@ -8,6 +8,62 @@
 #include "cache.h"
 #include "config.h"
 
+#ifdef __VSF__
+struct __git_ident_ctx_t {
+	struct strbuf __git_default_name;	// = STRBUF_INIT;
+	struct strbuf __git_default_email;	// = STRBUF_INIT;
+	struct strbuf __git_default_date;	// = STRBUF_INIT;
+	struct strbuf __git_author_name;	// = STRBUF_INIT;
+	struct strbuf __git_author_email;	// = STRBUF_INIT;
+	struct strbuf __git_committer_name;	// = STRBUF_INIT;
+	struct strbuf __git_committer_email;// = STRBUF_INIT;
+	int __default_email_is_bogus;
+	int __default_name_is_bogus;
+	int __ident_use_config_only;
+	int __committer_ident_explicitly_given;
+	int __author_ident_explicitly_given;
+	int __ident_config_given;
+	struct {
+		struct passwd __fallback;
+	} xgetpwuid_self;
+	struct {
+		int __index;
+		struct strbuf __ident_pool[2];	// = { STRBUF_INIT, STRBUF_INIT };
+	} fmt_ident;
+};
+static void __git_ident_mod_init(void *ctx)
+{
+	struct __git_ident_ctx_t *__git_ident_ctx = ctx;
+	__git_ident_ctx->__git_default_name = STRBUF_INIT;
+	__git_ident_ctx->__git_default_email = STRBUF_INIT;
+	__git_ident_ctx->__git_default_date = STRBUF_INIT;
+	__git_ident_ctx->__git_author_name = STRBUF_INIT;
+	__git_ident_ctx->__git_author_email = STRBUF_INIT;
+	__git_ident_ctx->__git_committer_name = STRBUF_INIT;
+	__git_ident_ctx->__git_committer_email = STRBUF_INIT;
+	__git_ident_ctx->fmt_ident.__ident_pool[0] = STRBUF_INIT;
+	__git_ident_ctx->fmt_ident.__ident_pool[1] = STRBUF_INIT;
+}
+define_vsf_git_mod(git_ident,
+	sizeof(struct __git_ident_ctx_t),
+	GIT_MOD_IDENT,
+	__git_ident_mod_init
+)
+#	define git_ident_ctx				((struct __git_ident_ctx_t *)vsf_git_ctx(git_ident))
+#	define git_default_name				(git_ident_ctx->__git_default_name)
+#	define git_default_email			(git_ident_ctx->__git_default_email)
+#	define git_default_date				(git_ident_ctx->__git_default_date)
+#	define git_author_name				(git_ident_ctx->__git_author_name)
+#	define git_author_email				(git_ident_ctx->__git_author_email)
+#	define git_committer_name			(git_ident_ctx->__git_committer_name)
+#	define git_committer_email			(git_ident_ctx->__git_committer_email)
+#	define default_email_is_bogus		(git_ident_ctx->__default_email_is_bogus)
+#	define default_name_is_bogus		(git_ident_ctx->__default_name_is_bogus)
+#	define ident_use_config_only		(git_ident_ctx->__ident_use_config_only)
+#	define committer_ident_explicitly_given	(git_ident_ctx->__committer_ident_explicitly_given)
+#	define author_ident_explicitly_given	(git_ident_ctx->__author_ident_explicitly_given)
+#	define ident_config_given			(git_ident_ctx->__ident_config_given)
+#else
 static struct strbuf git_default_name = STRBUF_INIT;
 static struct strbuf git_default_email = STRBUF_INIT;
 static struct strbuf git_default_date = STRBUF_INIT;
@@ -19,13 +75,16 @@ static int default_email_is_bogus;
 static int default_name_is_bogus;
 
 static int ident_use_config_only;
+#endif
 
 #define IDENT_NAME_GIVEN 01
 #define IDENT_MAIL_GIVEN 02
 #define IDENT_ALL_GIVEN (IDENT_NAME_GIVEN|IDENT_MAIL_GIVEN)
+#ifndef __VSF__
 static int committer_ident_explicitly_given;
 static int author_ident_explicitly_given;
 static int ident_config_given;
+#endif
 
 #ifdef NO_GECOS_IN_PWENT
 #define get_gecos(ignored) "&"
@@ -40,7 +99,11 @@ static struct passwd *xgetpwuid_self(int *is_bogus)
 	errno = 0;
 	pw = getpwuid(getuid());
 	if (!pw) {
+#ifdef __VSF__
+#	define fallback						(git_ident_ctx->xgetpwuid_self.__fallback)
+#else
 		static struct passwd fallback;
+#endif
 		fallback.pw_name = "unknown";
 #ifndef NO_GECOS_IN_PWENT
 		fallback.pw_gecos = "Unknown";
@@ -50,6 +113,9 @@ static struct passwd *xgetpwuid_self(int *is_bogus)
 			*is_bogus = 1;
 	}
 	return pw;
+#ifdef __VSF__
+#	undef fallback
+#endif
 }
 
 static void copy_gecos(const struct passwd *w, struct strbuf *name)
@@ -375,8 +441,13 @@ static void ident_env_hint(enum want_ident whose_ident)
 const char *fmt_ident(const char *name, const char *email,
 		      enum want_ident whose_ident, const char *date_str, int flag)
 {
+#ifdef __VSF__
+#	define index						(git_ident_ctx->fmt_ident.__index)
+#	define ident_pool					(git_ident_ctx->fmt_ident.__ident_pool)
+#else
 	static int index;
 	static struct strbuf ident_pool[2] = { STRBUF_INIT, STRBUF_INIT };
+#endif
 	int strict = (flag & IDENT_STRICT);
 	int want_date = !(flag & IDENT_NO_DATE);
 	int want_name = !(flag & IDENT_NO_NAME);
@@ -458,6 +529,10 @@ const char *fmt_ident(const char *name, const char *email,
 	}
 
 	return ident->buf;
+#ifdef __VSF__
+#	undef index
+#	undef ident_pool
+#endif
 }
 
 const char *fmt_name(enum want_ident whose_ident)

@@ -58,6 +58,12 @@ struct base_data {
 	unsigned long size;
 };
 
+#ifdef __VSF__
+#	define work_head					(git_builtin_index_pack_ctx->__work_head)
+#	define done_head					(git_builtin_index_pack_ctx->__done_head)
+#	define base_cache_used				(git_builtin_index_pack_ctx->__base_cache_used)
+#	define base_cache_limit				(git_builtin_index_pack_ctx->__base_cache_limit)
+#else
 /*
  * Stack of struct base_data that have unprocessed children.
  * threaded_second_pass() uses this as a source of work (the other being the
@@ -83,10 +89,6 @@ static LIST_HEAD(done_head);
  * base_cache_used is guarded by work_mutex, and base_cache_limit is read-only
  * in a thread.
  */
-#ifdef __VSF__
-#	define base_cache_used				(git_builtin_index_pack_ctx->__base_cache_used)
-#	define base_cache_limit				(git_builtin_index_pack_ctx->__base_cache_limit)
-#else
 static size_t base_cache_used;
 static size_t base_cache_limit;
 #endif
@@ -112,6 +114,8 @@ struct ref_delta_entry {
 
 #ifdef __VSF__
 struct __git_builtin_index_pack_ctx_t {
+	struct list_head __work_head;		// = { &(work_head), &(work_head) }
+	struct list_head __done_head;		// = { &(done_head), &(done_head) }
 	size_t __base_cache_used;
 	size_t __base_cache_limit;
 	struct object_entry *__objects;
@@ -160,6 +164,12 @@ static void __git_builtin_index_pack_mod_init(void *ctx)
 {
 	struct __git_builtin_index_pack_ctx_t *__git_builtin_index_pack_ctx = ctx;
 	__git_builtin_index_pack_ctx->____fsck_options = FSCK_OPTIONS_MISSING_GITMODULES;
+	__git_builtin_index_pack_ctx->__work_head = (struct list_head){
+		&__git_builtin_index_pack_ctx->__work_head, &__git_builtin_index_pack_ctx->__work_head
+	};
+	__git_builtin_index_pack_ctx->__done_head = (struct list_head){
+		&__git_builtin_index_pack_ctx->__done_head, &__git_builtin_index_pack_ctx->__done_head
+	};
 }
 define_vsf_git_mod(git_builtin_index_pack,
 	sizeof(struct __git_builtin_index_pack_ctx_t),
