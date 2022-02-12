@@ -2740,7 +2740,7 @@ static int treat_leading_path(struct dir_struct *dir,
 static const char *get_ident_string(void)
 {
 #ifdef __VSF__
-#	define sb					(git_dir_ctx->get_ident_string.__sb)
+#	define sb							(git_dir_ctx->get_ident_string.__sb)
 #else
 	static struct strbuf sb = STRBUF_INIT;
 #endif
@@ -2820,7 +2820,7 @@ static struct untracked_cache_dir *validate_untracked_cache(struct dir_struct *d
 {
 	struct untracked_cache_dir *root;
 #ifdef __VSF__
-#	define untracked_cache_disabled	(git_dir_ctx->validate_untracked_cache.__untracked_cache_disabled)
+#	define untracked_cache_disabled		(git_dir_ctx->validate_untracked_cache.__untracked_cache_disabled)
 #else
 	static int untracked_cache_disabled = -1;
 #endif
@@ -2976,7 +2976,7 @@ int read_directory(struct dir_struct *dir, struct index_state *istate,
 	trace2_region_leave("dir", "read_directory", istate->repo);
 	if (dir->untracked) {
 #ifdef __VSF__
-#	define force_untracked_cache	(git_dir_ctx->read_directory.__force_untracked_cache)
+#	define force_untracked_cache		(git_dir_ctx->read_directory.__force_untracked_cache)
 #else
 		static int force_untracked_cache = -1;
 #endif

@@ -1,5 +1,24 @@
 #include "cache.h"
 
+#ifdef __VSF__
+struct __git_symlinks_ctx_t {
+	struct cache_def __default_cache;   // = CACHE_DEF_INIT;
+	struct strbuf __removal;			// = STRBUF_INIT;
+};
+static void __git_symlinks_mod_init(void *ctx)
+{
+	struct __git_symlinks_ctx_t *__git_symlinks_ctx = ctx;
+	__git_symlinks_ctx->__default_cache = CACHE_DEF_INIT;
+	__git_symlinks_ctx->__removal = STRBUF_INIT;
+}
+define_vsf_git_mod(git_symlinks,
+	sizeof(struct __git_symlinks_ctx_t),
+	GIT_MOD_SYMLINKS,
+	__git_symlinks_mod_init
+)
+#	define git_symlinks_ctx				((struct __git_symlinks_ctx_t *)vsf_git_ctx(git_symlinks))
+#endif
+
 static int threaded_check_leading_path(struct cache_def *cache, const char *name,
 				       int len, int warn_on_lstat_err);
 static int threaded_has_dirs_only_path(struct cache_def *cache, const char *name, int len, int prefix_len);
@@ -36,7 +55,11 @@ static int longest_path_match(const char *name_a, int len_a,
 	return match_len;
 }
 
+#ifdef __VSF__
+#	define default_cache				(git_symlinks_ctx->__default_cache)
+#else
 static struct cache_def default_cache = CACHE_DEF_INIT;
+#endif
 
 static inline void reset_lstat_cache(struct cache_def *cache)
 {
@@ -273,7 +296,11 @@ static int threaded_has_dirs_only_path(struct cache_def *cache, const char *name
 		FL_DIR;
 }
 
+#ifdef __VSF__
+#	define removal						(git_symlinks_ctx->__removal)
+#else
 static struct strbuf removal = STRBUF_INIT;
+#endif
 
 static void do_remove_scheduled_dirs(int new_len)
 {

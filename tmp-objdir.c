@@ -16,6 +16,21 @@ struct tmp_objdir {
 	int will_destroy;
 };
 
+#ifdef __VSF__
+struct __git_tmp_objdir_ctx_t {
+	struct tmp_objdir *__the_tmp_objdir;
+	struct {
+		int __installed_handlers;
+	} tmp_objdir_create;
+};
+define_vsf_git_mod(git_tmp_objdir,
+	sizeof(struct __git_tmp_objdir_ctx_t),
+	GIT_MOD_TMP_OBJDIR,
+	NULL
+)
+#	define git_tmp_objdir_ctx			((struct __git_tmp_objdir_ctx_t *)vsf_git_ctx(git_tmp_objdir))
+#	define the_tmp_objdir				(git_tmp_objdir_ctx->__the_tmp_objdir)
+#else
 /*
  * Allow only one tmp_objdir at a time in a running process, which simplifies
  * our signal/atexit cleanup routines.  It's doubtful callers will ever need
@@ -23,6 +38,7 @@ struct tmp_objdir {
  * tmp_objdirs simultaneously in many processes, of course.
  */
 static struct tmp_objdir *the_tmp_objdir;
+#endif
 
 static void tmp_objdir_free(struct tmp_objdir *t)
 {
@@ -130,7 +146,11 @@ static int setup_tmp_objdir(const char *root)
 
 struct tmp_objdir *tmp_objdir_create(const char *prefix)
 {
+#ifdef __VSF__
+#	define installed_handlers			(git_tmp_objdir_ctx->tmp_objdir_create.__installed_handlers)
+#else
 	static int installed_handlers;
+#endif
 	struct tmp_objdir *t;
 
 	if (the_tmp_objdir)
@@ -180,6 +200,9 @@ struct tmp_objdir *tmp_objdir_create(const char *prefix)
 		    absolute_path(t->path.buf));
 
 	return t;
+#ifdef __VSF__
+#	undef installed_handlers
+#endif
 }
 
 /*

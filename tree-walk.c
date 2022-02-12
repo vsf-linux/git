@@ -168,10 +168,32 @@ int tree_entry_gently(struct tree_desc *desc, struct name_entry *entry)
 	return 1;
 }
 
+#ifdef __VSF__
+struct __git_tree_walk_ctx_t {
+	int __traverse_trees_atexit_registered;
+	int __traverse_trees_count;
+	int __traverse_trees_cur_depth;
+	int __traverse_trees_max_depth;
+	struct {
+		struct traverse_info __dummy;
+	} setup_traverse_info;
+};
+define_vsf_git_mod(git_tree_walk,
+	sizeof(struct __git_tree_walk_ctx_t),
+	GIT_MOD_TREE_WALK,
+	NULL
+)
+#	define git_tree_walk_ctx			((struct __git_tree_walk_ctx_t *)vsf_git_ctx(git_tree_walk))
+#	define traverse_trees_atexit_registered	(git_tree_walk_ctx->__traverse_trees_atexit_registered)
+#	define traverse_trees_count			(git_tree_walk_ctx->__traverse_trees_count)
+#	define traverse_trees_cur_depth		(git_tree_walk_ctx->__traverse_trees_cur_depth)
+#	define traverse_trees_max_depth		(git_tree_walk_ctx->__traverse_trees_max_depth)
+#else
 static int traverse_trees_atexit_registered;
 static int traverse_trees_count;
 static int traverse_trees_cur_depth;
 static int traverse_trees_max_depth;
+#endif
 
 static void trace2_traverse_trees_statistics_atexit(void)
 {
@@ -190,7 +212,11 @@ static void trace2_traverse_trees_statistics_atexit(void)
 void setup_traverse_info(struct traverse_info *info, const char *base)
 {
 	size_t pathlen = strlen(base);
+#ifdef __VSF__
+#	define dummy						(git_tree_walk_ctx->setup_traverse_info.__dummy)
+#else
 	static struct traverse_info dummy;
+#endif
 
 	memset(info, 0, sizeof(*info));
 	if (pathlen && base[pathlen-1] == '/')
@@ -205,6 +231,9 @@ void setup_traverse_info(struct traverse_info *info, const char *base)
 		atexit(trace2_traverse_trees_statistics_atexit);
 		traverse_trees_atexit_registered = 1;
 	}
+#ifdef __VSF__
+#	undef dummy
+#endif
 }
 
 char *make_traverse_path(char *path, size_t pathlen,

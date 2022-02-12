@@ -23,10 +23,36 @@
 #include "object-store.h"
 #include "commit-reach.h"
 
+#ifdef __VSF__
+struct __git_submodule_ctx_t {
+	int __config_update_recurse_submodules;	// = RECURSE_SUBMODULES_OFF;
+	int __initialized_fetch_ref_tips;
+	struct oid_array __ref_tips_before_fetch;
+	struct oid_array __ref_tips_after_fetch;
+	struct string_list __added_submodule_odb_paths;	// = STRING_LIST_INIT_NODUP;
+};
+static void __git_submodule_mod_init(void *ctx)
+{
+	struct __git_submodule_ctx_t *__git_submodule_ctx = ctx;
+	__git_submodule_ctx->__config_update_recurse_submodules = RECURSE_SUBMODULES_OFF;
+	__git_submodule_ctx->__added_submodule_odb_paths = STRING_LIST_INIT_NODUP;
+}
+define_vsf_git_mod(git_submodule,
+	sizeof(struct __git_submodule_ctx_t),
+	GIT_MOD_SUBMODULE,
+	__git_submodule_mod_init
+)
+#	define git_submodule_ctx			((struct __git_submodule_ctx_t *)vsf_git_ctx(git_submodule))
+#	define config_update_recurse_submodules	(git_submodule_ctx->__config_update_recurse_submodules)
+#	define initialized_fetch_ref_tips	(git_submodule_ctx->__initialized_fetch_ref_tips)
+#	define ref_tips_before_fetch		(git_submodule_ctx->__ref_tips_before_fetch)
+#	define ref_tips_after_fetch			(git_submodule_ctx->__ref_tips_after_fetch)
+#else
 static int config_update_recurse_submodules = RECURSE_SUBMODULES_OFF;
 static int initialized_fetch_ref_tips;
 static struct oid_array ref_tips_before_fetch;
 static struct oid_array ref_tips_after_fetch;
+#endif
 
 /*
  * Check if the .gitmodules file is unmerged. Parsing of the .gitmodules file
@@ -165,7 +191,11 @@ void stage_updated_gitmodules(struct index_state *istate)
 		die(_("staging updated .gitmodules failed"));
 }
 
+#ifdef __VSF__
+#	define added_submodule_odb_paths	(git_submodule_ctx->__added_submodule_odb_paths)
+#else
 static struct string_list added_submodule_odb_paths = STRING_LIST_INIT_NODUP;
+#endif
 
 /* TODO: remove this function, use repo_submodule_init instead. */
 int add_submodule_odb(const char *path)

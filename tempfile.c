@@ -54,7 +54,31 @@
 #include "tempfile.h"
 #include "sigchain.h"
 
+#ifdef __VSF__
+struct __git_tempfile_ctx_t {
+	volatile struct volatile_list_head __tempfile_list; // = { &(name), &(name) }
+	struct {
+		int __initialized;
+	} activate_tempfile;
+};
+static void __git_tempfile_mod_init(void *ctx)
+{
+	struct __git_tempfile_ctx_t *__git_tempfile_ctx = ctx;
+	__git_tempfile_ctx->__tempfile_list = (struct volatile_list_head) {
+		&__git_tempfile_ctx->__tempfile_list,
+		&__git_tempfile_ctx->__tempfile_list,
+	};
+}
+define_vsf_git_mod(git_tempfile,
+	sizeof(struct __git_tempfile_ctx_t),
+	GIT_MOD_TEMPFILE,
+	__git_tempfile_mod_init
+)
+#	define git_tempfile_ctx				((struct __git_tempfile_ctx_t *)vsf_git_ctx(git_tempfile))
+#	define tempfile_list				(git_tempfile_ctx->__tempfile_list)
+#else
 static VOLATILE_LIST_HEAD(tempfile_list);
+#endif
 
 static void remove_tempfiles(int in_signal_handler)
 {
@@ -105,7 +129,11 @@ static struct tempfile *new_tempfile(void)
 
 static void activate_tempfile(struct tempfile *tempfile)
 {
+#ifdef __VSF__
+#	define initialized					(git_tempfile_ctx->activate_tempfile.__initialized)
+#else
 	static int initialized;
+#endif
 
 	if (is_tempfile_active(tempfile))
 		BUG("activate_tempfile called for active object");
@@ -119,6 +147,9 @@ static void activate_tempfile(struct tempfile *tempfile)
 	volatile_list_add(&tempfile->list, &tempfile_list);
 	tempfile->owner = getpid();
 	tempfile->active = 1;
+#ifdef __VSF__
+#	undef initialized
+#endif
 }
 
 static void deactivate_tempfile(struct tempfile *tempfile)

@@ -20,7 +20,9 @@ struct conf_info {
 	enum trailer_if_missing if_missing;
 };
 
+#ifndef __VSF__
 static struct conf_info default_conf_info;
+#endif
 
 struct trailer_item {
 	struct list_head list;
@@ -39,11 +41,40 @@ struct arg_item {
 	struct conf_info conf;
 };
 
+#ifdef __VSF__
+struct __git_trailer_ctx_t {
+	struct conf_info __default_conf_info;
+	struct list_head __conf_head;	    // = { &(conf_head), &(conf_head) };
+	char *____separators;				// = ":";
+	int __configured;
+	struct tempfile *__trailers_tempfile;
+};
+static void __git_trailer_mod_init(void *ctx)
+{
+	struct __git_trailer_ctx_t *__git_trailer_ctx = ctx;
+	__git_trailer_ctx->__conf_head = (struct list_head) {
+		&__git_trailer_ctx->__conf_head,
+		&__git_trailer_ctx->__conf_head,
+	};
+	__git_trailer_ctx->____separators = ":";
+}
+define_vsf_git_mod(git_trailer,
+	sizeof(struct __git_trailer_ctx_t),
+	GIT_MOD_TRAILER,
+	__git_trailer_mod_init
+)
+#	define git_trailer_ctx				((struct __git_trailer_ctx_t *)vsf_git_ctx(git_trailer))
+#	define default_conf_info			(git_trailer_ctx->__default_conf_info)
+#	define conf_head					(git_trailer_ctx->__conf_head)
+#	define __separators					(git_trailer_ctx->____separators)
+#	define configured					(git_trailer_ctx->__configured)
+#else
 static LIST_HEAD(conf_head);
 
-static char *separators = ":";
+static char *__separators = ":";
 
 static int configured;
+#endif
 
 #define TRAILER_ARG_STRING "$ARG"
 
@@ -155,10 +186,10 @@ static void print_tok_val(FILE *outfile, const char *tok, const char *val)
 	c = last_non_space_char(tok);
 	if (!c)
 		return;
-	if (strchr(separators, c))
+	if (strchr(__separators, c))
 		fprintf(outfile, "%s%s\n", tok, val);
 	else
-		fprintf(outfile, "%s%c %s\n", tok, separators[0], val);
+		fprintf(outfile, "%s%c %s\n", tok, __separators[0], val);
 }
 
 static void print_all(FILE *outfile, struct list_head *head,
@@ -469,7 +500,7 @@ enum trailer_info_type { TRAILER_KEY, TRAILER_COMMAND, TRAILER_CMD,
 static struct {
 	const char *name;
 	enum trailer_info_type type;
-} trailer_config_items[] = {
+} const trailer_config_items[] = {
 	{ "key", TRAILER_KEY },
 	{ "command", TRAILER_COMMAND },
 	{ "cmd", TRAILER_CMD },
@@ -503,7 +534,7 @@ static int git_trailer_default_config(const char *conf_key, const char *value, v
 				warning(_("unknown value '%s' for key '%s'"),
 					value, conf_key);
 		} else if (!strcmp(trailer_item, "separators")) {
-			separators = xstrdup(value);
+			__separators = xstrdup(value);
 		}
 	}
 	return 0;
@@ -718,7 +749,7 @@ static void process_command_line_args(struct list_head *arg_head,
 	 * In command-line arguments, '=' is accepted (in addition to the
 	 * separators that are defined).
 	 */
-	char *cl_separators = xstrfmt("=%s", separators);
+	char *cl_separators = xstrfmt("=%s", __separators);
 
 	/* Add an arg item for each configured trailer with a command */
 	list_for_each(pos, &conf_head) {
@@ -883,7 +914,7 @@ static size_t find_trailer_start(const char *buf, size_t len)
 			}
 		}
 
-		separator_pos = find_separator(bol, separators);
+		separator_pos = find_separator(bol, __separators);
 		if (separator_pos >= 1 && !isspace(bol[0])) {
 			struct list_head *pos;
 
@@ -979,7 +1010,7 @@ static size_t process_input_file(FILE *outfile,
 		char *trailer = info.trailers[i];
 		if (trailer[0] == comment_line_char)
 			continue;
-		separator_pos = find_separator(trailer, separators);
+		separator_pos = find_separator(trailer, __separators);
 		if (separator_pos >= 1) {
 			parse_trailer(&tok, &val, NULL, trailer,
 				      separator_pos);
@@ -1011,7 +1042,11 @@ static void free_all(struct list_head *head)
 	}
 }
 
+#ifdef __VSF__
+#	define trailers_tempfile			(git_trailer_ctx->__trailers_tempfile)
+#else
 static struct tempfile *trailers_tempfile;
+#endif
 
 static FILE *create_in_place_tempfile(const char *file)
 {
@@ -1115,7 +1150,7 @@ void trailer_info_get(struct trailer_info *info, const char *str,
 		}
 		ALLOC_GROW(trailer_strings, nr + 1, alloc);
 		trailer_strings[nr] = strbuf_detach(*ptr, NULL);
-		last = find_separator(trailer_strings[nr], separators) >= 1
+		last = find_separator(trailer_strings[nr], __separators) >= 1
 			? &trailer_strings[nr]
 			: NULL;
 		nr++;
@@ -1156,7 +1191,7 @@ static void format_trailer_info(struct strbuf *out,
 
 	for (i = 0; i < info->trailer_nr; i++) {
 		char *trailer = info->trailers[i];
-		ssize_t separator_pos = find_separator(trailer, separators);
+		ssize_t separator_pos = find_separator(trailer, __separators);
 
 		if (separator_pos >= 1) {
 			struct strbuf tok = STRBUF_INIT;
@@ -1222,7 +1257,7 @@ int trailer_iterator_advance(struct trailer_iterator *iter)
 {
 	while (iter->cur < iter->info.trailer_nr) {
 		char *trailer = iter->info.trailers[iter->cur++];
-		int separator_pos = find_separator(trailer, separators);
+		int separator_pos = find_separator(trailer, __separators);
 
 		if (separator_pos < 1)
 			continue; /* not a real trailer */
