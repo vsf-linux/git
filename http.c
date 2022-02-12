@@ -17,6 +17,163 @@
 #include "string-list.h"
 #include "object-store.h"
 
+#ifdef __VSF__
+static void __git_http_public_mod_init(void *ctx)
+{
+	struct __git_http_public_ctx_t *__git_http_public_ctx = ctx;
+	__git_http_public_ctx->__http_follow_config = HTTP_FOLLOW_INITIAL;
+	__git_http_public_ctx->__git_curl_ipresolve = CURL_IPRESOLVE_WHATEVER;
+	__git_http_public_ctx->__http_post_buffer = 16 * LARGE_PACKET_MAX;
+	__git_http_public_ctx->__http_auth = CREDENTIAL_INIT;
+}
+define_vsf_git_mod(git_http_public,
+	sizeof(struct __git_http_public_ctx_t),
+	GIT_MOD_HTTP_PUBLIC,
+	__git_http_public_mod_init
+)
+
+struct __git_http_ctx_t {
+	struct trace_key __trace_curl;	// = TRACE_KEY_INIT(CURL);
+	int __trace_curl_data;			// = 1;
+	int __trace_curl_redact;		// = 1;
+	int __min_curl_sessions;		// = 1;
+	int __curl_session_count;
+	int __max_requests;				// = -1;
+	CURLM *__curlm;
+	CURL *__curl_default;
+	int __curl_ssl_verify;			// = -1;
+	int __curl_ssl_try;
+	const char *__curl_http_version;
+	const char *__ssl_cert;
+	const char *__ssl_cipherlist;
+	const char *____ssl_version;
+	const char *__ssl_key;
+	const char *__ssl_capath;
+	const char *__curl_no_proxy;
+#ifdef GIT_CURL_HAVE_CURLOPT_PINNEDPUBLICKEY
+	const char *__ssl_pinnedkey;
+#endif
+	const char *__ssl_cainfo;
+	long __curl_low_speed_limit;	// = -1;
+	long __curl_low_speed_time;		// = -1;
+	int __curl_ftp_no_epsv;
+	const char *__curl_http_proxy;
+	const char *____http_proxy_authmethod;
+	const char *__http_proxy_ssl_cert;
+	const char *__http_proxy_ssl_key;
+	const char *__http_proxy_ssl_ca_info;
+	struct credential __proxy_cert_auth;	// = CREDENTIAL_INIT;
+	int __proxy_ssl_cert_password_required;
+#ifdef CURLGSSAPI_DELEGATION_FLAG
+	const char *__curl_deleg;
+#endif
+	struct credential __proxy_auth;	// = CREDENTIAL_INIT;
+	const char *__curl_proxyuserpwd;
+	const char *__curl_cookie_file;
+	int __curl_save_cookies;
+	int __http_proactive_auth;
+	const char *__user_agent;
+	int __curl_empty_auth;			// = -1;
+	struct credential __cert_auth;	// = CREDENTIAL_INIT;
+	int __ssl_cert_password_required;
+	unsigned long __http_auth_methods;	// = CURLAUTH_ANY;
+	int __http_auth_methods_restricted;
+	unsigned long __empty_auth_useless;	// = CURLAUTH_BASIC | CURLAUTH_DIGEST_IE | CURLAUTH_DIGEST;
+	struct curl_slist *__pragma_header;
+	struct curl_slist *__no_pragma_header;
+	struct string_list __extra_http_headers;// = STRING_LIST_INIT_DUP;
+	struct active_request_slot *__active_queue_head;
+	char *__cached_accept_language;
+	char *__http_ssl_backend;
+	int __http_schannel_check_revoke;	// = 1;
+	int __http_schannel_use_ssl_cainfo;
+	struct fill_chain {
+		void *data;
+		int (*fill)(void *);
+		struct fill_chain *next;
+	} *__fill_cfg;
+};
+static void __git_http_mod_init(void *ctx)
+{
+	struct __git_http_ctx_t *__git_http_ctx = ctx;
+	__git_http_ctx->__trace_curl = TRACE_KEY_INIT(CURL);
+	__git_http_ctx->__trace_curl_data = 1;
+	__git_http_ctx->__trace_curl_redact = 1;
+	__git_http_ctx->__min_curl_sessions = 1;
+	__git_http_ctx->__max_requests = -1;
+	__git_http_ctx->__curl_ssl_verify = -1;
+	__git_http_ctx->__curl_low_speed_limit = -1;
+	__git_http_ctx->__curl_low_speed_time = -1;
+	__git_http_ctx->__proxy_cert_auth = CREDENTIAL_INIT;
+	__git_http_ctx->__proxy_auth = CREDENTIAL_INIT;
+	__git_http_ctx->__curl_empty_auth = -1;
+	__git_http_ctx->__cert_auth = CREDENTIAL_INIT;
+	__git_http_ctx->__http_auth_methods = CURLAUTH_ANY;
+	__git_http_ctx->__empty_auth_useless = CURLAUTH_BASIC | CURLAUTH_DIGEST_IE | CURLAUTH_DIGEST;
+	__git_http_ctx->__extra_http_headers = STRING_LIST_INIT_DUP;
+	__git_http_ctx->__http_schannel_check_revoke = 1;
+}
+define_vsf_git_mod(git_http,
+	sizeof(struct __git_http_ctx_t),
+	GIT_MOD_HTTP,
+	__git_http_mod_init
+)
+#	define git_http_ctx				((struct __git_http_ctx_t *)vsf_git_ctx(git_http))
+#	define trace_curl				(git_http_ctx->__trace_curl)
+#	define trace_curl_data			(git_http_ctx->__trace_curl_data)
+#	define trace_curl_redact		(git_http_ctx->__trace_curl_redact)
+#	define min_curl_sessions		(git_http_ctx->__min_curl_sessions)
+#	define curl_session_count		(git_http_ctx->__curl_session_count)
+#	define max_requests				(git_http_ctx->__max_requests)
+#	define curlm					(git_http_ctx->__curlm)
+#	define curl_default				(git_http_ctx->__curl_default)
+#	define curl_ssl_verify			(git_http_ctx->__curl_ssl_verify)
+#	define curl_ssl_try				(git_http_ctx->__curl_ssl_try)
+#	define curl_http_version		(git_http_ctx->__curl_http_version)
+#	define ssl_cert					(git_http_ctx->__ssl_cert)
+#	define ssl_cipherlist			(git_http_ctx->__ssl_cipherlist)
+#	define __ssl_version			(git_http_ctx->____ssl_version)
+#	define ssl_key					(git_http_ctx->__ssl_key)
+#	define ssl_capath				(git_http_ctx->__ssl_capath)
+#	define curl_no_proxy			(git_http_ctx->__curl_no_proxy)
+#ifdef GIT_CURL_HAVE_CURLOPT_PINNEDPUBLICKEY
+#	define ssl_pinnedkey			(git_http_ctx->__ssl_pinnedkey)
+#endif
+#	define ssl_cainfo				(git_http_ctx->__ssl_cainfo)
+#	define curl_low_speed_limit		(git_http_ctx->__curl_low_speed_limit)
+#	define curl_low_speed_time		(git_http_ctx->__curl_low_speed_time)
+#	define curl_ftp_no_epsv			(git_http_ctx->__curl_ftp_no_epsv)
+#	define curl_http_proxy			(git_http_ctx->__curl_http_proxy)
+#	define __http_proxy_authmethod	(git_http_ctx->____http_proxy_authmethod)
+#	define http_proxy_ssl_cert		(git_http_ctx->__http_proxy_ssl_cert)
+#	define http_proxy_ssl_key		(git_http_ctx->__http_proxy_ssl_key)
+#	define http_proxy_ssl_ca_info	(git_http_ctx->__http_proxy_ssl_ca_info)
+#	define proxy_cert_auth			(git_http_ctx->__proxy_cert_auth)
+#	define proxy_ssl_cert_password_required	(git_http_ctx->__proxy_ssl_cert_password_required)
+#ifdef CURLGSSAPI_DELEGATION_FLAG
+#	define curl_deleg				(git_http_ctx->__curl_deleg)
+#endif
+#	define proxy_auth				(git_http_ctx->__proxy_auth)
+#	define curl_proxyuserpwd		(git_http_ctx->__curl_proxyuserpwd)
+#	define curl_cookie_file			(git_http_ctx->__curl_cookie_file)
+#	define curl_save_cookies		(git_http_ctx->__curl_save_cookies)
+#	define http_proactive_auth		(git_http_ctx->__http_proactive_auth)
+#	define user_agent				(git_http_ctx->__user_agent)
+#	define curl_empty_auth			(git_http_ctx->__curl_empty_auth)
+#	define cert_auth				(git_http_ctx->__cert_auth)
+#	define ssl_cert_password_required	(git_http_ctx->__ssl_cert_password_required)
+#	define http_auth_methods		(git_http_ctx->__http_auth_methods)
+#	define http_auth_methods_restricted	(git_http_ctx->__http_auth_methods_restricted)
+#	define empty_auth_useless		(git_http_ctx->__empty_auth_useless)
+#	define pragma_header			(git_http_ctx->__pragma_header)
+#	define no_pragma_header			(git_http_ctx->__no_pragma_header)
+#	define extra_http_headers		(git_http_ctx->__extra_http_headers)
+#	define active_queue_head		(git_http_ctx->__active_queue_head)
+#	define cached_accept_language	(git_http_ctx->__cached_accept_language)
+#	define http_ssl_backend			(git_http_ctx->__http_ssl_backend)
+#	define http_schannel_check_revoke	(git_http_ctx->__http_schannel_check_revoke)
+#	define http_schannel_use_ssl_cainfo	(git_http_ctx->__http_schannel_use_ssl_cainfo)
+#else
 static struct trace_key trace_curl = TRACE_KEY_INIT(CURL);
 static int trace_curl_data = 1;
 static int trace_curl_redact = 1;
@@ -30,9 +187,11 @@ static int curl_session_count;
 static int max_requests = -1;
 static CURLM *curlm;
 static CURL *curl_default;
+#endif
 
 #define PREV_BUF_SIZE 4096
 
+#ifndef __VSF__
 char curl_errorstr[CURL_ERROR_SIZE];
 
 static int curl_ssl_verify = -1;
@@ -40,11 +199,12 @@ static int curl_ssl_try;
 static const char *curl_http_version = NULL;
 static const char *ssl_cert;
 static const char *ssl_cipherlist;
-static const char *ssl_version;
+static const char *__ssl_version;
+#endif
 static struct {
 	const char *name;
 	long ssl_version;
-} sslversions[] = {
+} const sslversions[] = {
 	{ "sslv2", CURL_SSLVERSION_SSLv2 },
 	{ "sslv3", CURL_SSLVERSION_SSLv3 },
 	{ "tlsv1", CURL_SSLVERSION_TLSv1 },
@@ -57,6 +217,7 @@ static struct {
 	{ "tlsv1.3", CURL_SSLVERSION_TLSv1_3 },
 #endif
 };
+#ifndef __VSF__
 static const char *ssl_key;
 static const char *ssl_capath;
 static const char *curl_no_proxy;
@@ -68,18 +229,19 @@ static long curl_low_speed_limit = -1;
 static long curl_low_speed_time = -1;
 static int curl_ftp_no_epsv;
 static const char *curl_http_proxy;
-static const char *http_proxy_authmethod;
+static const char *__http_proxy_authmethod;
 
 static const char *http_proxy_ssl_cert;
 static const char *http_proxy_ssl_key;
 static const char *http_proxy_ssl_ca_info;
 static struct credential proxy_cert_auth = CREDENTIAL_INIT;
 static int proxy_ssl_cert_password_required;
+#endif
 
 static struct {
 	const char *name;
 	long curlauth_param;
-} proxy_authmethods[] = {
+} const proxy_authmethods[] = {
 	{ "basic", CURLAUTH_BASIC },
 	{ "digest", CURLAUTH_DIGEST },
 	{ "negotiate", CURLAUTH_GSSNEGOTIATE },
@@ -92,7 +254,9 @@ static struct {
 	 */
 };
 #ifdef CURLGSSAPI_DELEGATION_FLAG
+#ifndef __VSF__
 static const char *curl_deleg;
+#endif
 static struct {
 	const char *name;
 	long curl_deleg_param;
@@ -103,6 +267,7 @@ static struct {
 };
 #endif
 
+#ifndef __VSF__
 static struct credential proxy_auth = CREDENTIAL_INIT;
 static const char *curl_proxyuserpwd;
 static const char *curl_cookie_file;
@@ -141,6 +306,7 @@ static int http_schannel_check_revoke = 1;
  * by default.
  */
 static int http_schannel_use_ssl_cainfo;
+#endif
 
 size_t fread_buffer(char *ptr, size_t eltsize, size_t nmemb, void *buffer_)
 {
@@ -261,7 +427,7 @@ static int http_options(const char *var, const char *value, void *cb)
 	if (!strcmp("http.sslcipherlist", var))
 		return git_config_string(&ssl_cipherlist, var, value);
 	if (!strcmp("http.sslversion", var))
-		return git_config_string(&ssl_version, var, value);
+		return git_config_string(&__ssl_version, var, value);
 	if (!strcmp("http.sslcert", var))
 		return git_config_pathname(&ssl_cert, var, value);
 	if (!strcmp("http.sslkey", var))
@@ -321,7 +487,7 @@ static int http_options(const char *var, const char *value, void *cb)
 		return git_config_string(&curl_http_proxy, var, value);
 
 	if (!strcmp("http.proxyauthmethod", var))
-		return git_config_string(&http_proxy_authmethod, var, value);
+		return git_config_string(&__http_proxy_authmethod, var, value);
 
 	if (!strcmp("http.proxysslcert", var))
 		return git_config_string(&http_proxy_ssl_cert, var, value);
@@ -466,12 +632,12 @@ static void init_curl_proxy_auth(CURL *result)
 		set_proxyauth_name_password(result);
 	}
 
-	var_override(&http_proxy_authmethod, getenv("GIT_HTTP_PROXY_AUTHMETHOD"));
+	var_override(&__http_proxy_authmethod, getenv("GIT_HTTP_PROXY_AUTHMETHOD"));
 
-	if (http_proxy_authmethod) {
+	if (__http_proxy_authmethod) {
 		int i;
 		for (i = 0; i < ARRAY_SIZE(proxy_authmethods); i++) {
-			if (!strcmp(http_proxy_authmethod, proxy_authmethods[i].name)) {
+			if (!strcmp(__http_proxy_authmethod, proxy_authmethods[i].name)) {
 				curl_easy_setopt(result, CURLOPT_PROXYAUTH,
 						proxy_authmethods[i].curlauth_param);
 				break;
@@ -479,7 +645,7 @@ static void init_curl_proxy_auth(CURL *result)
 		}
 		if (i == ARRAY_SIZE(proxy_authmethods)) {
 			warning("unsupported proxy authentication method %s: using anyauth",
-					http_proxy_authmethod);
+					__http_proxy_authmethod);
 			curl_easy_setopt(result, CURLOPT_PROXYAUTH, CURLAUTH_ANY);
 		}
 	}
@@ -740,7 +906,7 @@ static int get_curl_http_version_opt(const char *version_string, long *opt)
 	static struct {
 		const char *name;
 		long opt_token;
-	} choice[] = {
+	} const choice[] = {
 		{ "HTTP/1.1", CURL_HTTP_VERSION_1_1 },
 		{ "HTTP/2", CURL_HTTP_VERSION_2 }
 	};
@@ -817,11 +983,11 @@ static CURL *get_curl_handle(void)
 		init_curl_http_auth(result);
 
 	if (getenv("GIT_SSL_VERSION"))
-		ssl_version = getenv("GIT_SSL_VERSION");
-	if (ssl_version && *ssl_version) {
+		__ssl_version = getenv("GIT_SSL_VERSION");
+	if (__ssl_version && *__ssl_version) {
 		int i;
 		for (i = 0; i < ARRAY_SIZE(sslversions); i++) {
-			if (!strcmp(ssl_version, sslversions[i].name)) {
+			if (!strcmp(__ssl_version, sslversions[i].name)) {
 				curl_easy_setopt(result, CURLOPT_SSLVERSION,
 						 sslversions[i].ssl_version);
 				break;
@@ -829,7 +995,7 @@ static CURL *get_curl_handle(void)
 		}
 		if (i == ARRAY_SIZE(sslversions))
 			warning("unsupported ssl version %s: using default",
-				ssl_version);
+				__ssl_version);
 	}
 
 	if (getenv("GIT_SSL_CIPHER_LIST"))
@@ -1041,7 +1207,7 @@ void http_init(struct remote *remote, const char *url, int proactive_auth)
 		curl_http_proxy = xstrdup(remote->http_proxy);
 
 	if (remote)
-		var_override(&http_proxy_authmethod, remote->http_proxy_authmethod);
+		var_override(&__http_proxy_authmethod, remote->http_proxy_authmethod);
 
 	pragma_header = curl_slist_append(http_copy_default_headers(),
 		"Pragma: no-cache");
@@ -1144,8 +1310,8 @@ void http_cleanup(void)
 	free((void *)curl_proxyuserpwd);
 	curl_proxyuserpwd = NULL;
 
-	free((void *)http_proxy_authmethod);
-	http_proxy_authmethod = NULL;
+	free((void *)__http_proxy_authmethod);
+	__http_proxy_authmethod = NULL;
 
 	if (cert_auth.password != NULL) {
 		memset(cert_auth.password, 0, strlen(cert_auth.password));
@@ -1261,6 +1427,9 @@ int start_active_slot(struct active_request_slot *slot)
 	return 1;
 }
 
+#ifdef __VSF__
+#	define fill_cfg					(git_http_ctx->__fill_cfg)
+#else
 struct fill_chain {
 	void *data;
 	int (*fill)(void *);
@@ -1268,6 +1437,7 @@ struct fill_chain {
 };
 
 static struct fill_chain *fill_cfg;
+#endif
 
 void add_fill_function(void *data, int (*fill)(void *))
 {

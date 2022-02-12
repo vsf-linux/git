@@ -9,6 +9,7 @@
 #include "strbuf.h"
 #include "remote.h"
 #include "url.h"
+#include "credential.h"
 
 #define DEFAULT_MAX_REQUESTS 5
 
@@ -66,6 +67,7 @@ void http_init(struct remote *remote, const char *url,
 void http_cleanup(void);
 struct curl_slist *http_copy_default_headers(void);
 
+#ifndef __VSF__
 extern long int git_curl_ipresolve;
 extern int active_requests;
 extern int http_is_verbose;
@@ -73,13 +75,35 @@ extern ssize_t http_post_buffer;
 extern struct credential http_auth;
 
 extern char curl_errorstr[CURL_ERROR_SIZE];
+#endif
 
 enum http_follow_config {
 	HTTP_FOLLOW_NONE,
 	HTTP_FOLLOW_ALWAYS,
 	HTTP_FOLLOW_INITIAL
 };
+#ifdef __VSF__
+struct __git_http_public_ctx_t {
+	long int __git_curl_ipresolve;
+	int __active_requests;
+	int __http_is_verbose;
+	ssize_t __http_post_buffer;
+	struct credential __http_auth;
+	char __curl_errorstr[CURL_ERROR_SIZE];
+	enum http_follow_config __http_follow_config;
+};
+declare_vsf_git_mod(git_http_public)
+#	define git_http_public_ctx		((struct __git_http_public_ctx_t *)vsf_git_ctx(git_http_public))
+#	define git_curl_ipresolve		(git_http_public_ctx->__git_curl_ipresolve)
+#	define active_requests			(git_http_public_ctx->__active_requests)
+#	define http_is_verbose			(git_http_public_ctx->__http_is_verbose)
+#	define http_post_buffer			(git_http_public_ctx->__http_post_buffer)
+#	define http_auth				(git_http_public_ctx->__http_auth)
+#	define curl_errorstr			(git_http_public_ctx->__curl_errorstr)
+#	define http_follow_config		(git_http_public_ctx->__http_follow_config)
+#else
 extern enum http_follow_config http_follow_config;
+#endif
 
 static inline int missing__target(int code, int result)
 {

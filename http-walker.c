@@ -46,7 +46,28 @@ struct walker_data {
 	struct alt_base *alt;
 };
 
+#ifdef __VSF__
+struct __git_http_walker_ctx_t {
+	struct list_head __object_queue_head;	// = { &(object_queue_head), &(object_queue_head) }
+};
+static void __git_http_walker_mod_init(void *ctx)
+{
+	struct __git_http_walker_ctx_t *__git_http_walker_ctx = ctx;
+	__git_http_walker_ctx->__object_queue_head = (struct list_head) {
+		&__git_http_walker_ctx->__object_queue_head,
+		&__git_http_walker_ctx->__object_queue_head,
+	};
+}
+define_vsf_git_mod(git_http_walker,
+	sizeof(struct __git_http_walker_ctx_t),
+	GIT_MOD_HTTP_WALKER,
+	__git_http_walker_mod_init
+)
+#	define git_http_walker_ctx			((struct __git_http_walker_ctx_t *)vsf_git_ctx(git_http_walker))
+#	define object_queue_head			(git_http_walker_ctx->__object_queue_head)
+#else
 static LIST_HEAD(object_queue_head);
+#endif
 
 static void fetch_alternates(struct walker *walker, const char *base);
 

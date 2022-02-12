@@ -17,10 +17,37 @@
 static const char content_type[] = "Content-Type";
 static const char content_length[] = "Content-Length";
 static const char last_modified[] = "Last-Modified";
+#ifdef __VSF__
+struct __git_http_backend_ctx_t {
+	int __getanyfile;					// = 1;
+	unsigned long __max_request_buffer;	// = 10 * 1024 * 1024;
+	struct string_list *__query_params;
+	int __dead;
+	struct {
+		char __buffer[1024];
+	} format_write;
+};
+static void __git_http_backend_mod_init(void *ctx)
+{
+	struct __git_http_backend_ctx_t *__git_http_backend_ctx = ctx;
+	__git_http_backend_ctx->__getanyfile = 1;
+	__git_http_backend_ctx->__max_request_buffer = 10 * 1024 * 1024;
+}
+define_vsf_git_mod(git_http_backend,
+	sizeof(struct __git_http_backend_ctx_t),
+	GIT_MOD_HTTP_BACKEND,
+	__git_http_backend_mod_init
+)
+#	define git_http_backend_ctx			((struct __git_http_backend_ctx_t *)vsf_git_ctx(git_http_backend))
+#	define getanyfile					(git_http_backend_ctx->__getanyfile)
+#	define max_request_buffer			(git_http_backend_ctx->__max_request_buffer)
+#	define query_params					(git_http_backend_ctx->__query_params)
+#else
 static int getanyfile = 1;
 static unsigned long max_request_buffer = 10 * 1024 * 1024;
 
 static struct string_list *query_params;
+#endif
 
 struct rpc_service {
 	const char *name;
@@ -29,7 +56,7 @@ struct rpc_service {
 	signed enabled : 2;
 };
 
-static struct rpc_service rpc_service[] = {
+static const struct rpc_service rpc_service[] = {
 	{ "upload-pack", "uploadpack", 1, 1 },
 	{ "receive-pack", "receivepack", 0, -1 },
 };
@@ -66,7 +93,11 @@ static const char *get_parameter(const char *name)
 __attribute__((format (printf, 2, 3)))
 static void format_write(int fd, const char *fmt, ...)
 {
+#ifdef __VSF__
+#	define buffer						(git_http_backend_ctx->format_write.__buffer)
+#else
 	static char buffer[1024];
+#endif
 
 	va_list args;
 	unsigned n;
@@ -78,6 +109,9 @@ static void format_write(int fd, const char *fmt, ...)
 		die("protocol error: impossibly long line");
 
 	write_or_die(fd, buffer, n);
+#ifdef __VSF__
+#	undef buffer
+#endif
 }
 
 static void http_status(struct strbuf *hdr, unsigned code, const char *msg)
@@ -654,7 +688,11 @@ static void service_rpc(struct strbuf *hdr, char *service_name)
 	strbuf_release(&buf);
 }
 
+#ifdef __VSF__
+#	define dead							(git_http_backend_ctx->__dead)
+#else
 static int dead;
+#endif
 static NORETURN void die_webcgi(const char *err, va_list params)
 {
 	if (dead <= 1) {
@@ -703,7 +741,7 @@ static struct service_cmd {
 	const char *method;
 	const char *pattern;
 	void (*imp)(struct strbuf *, char *);
-} services[] = {
+} const services[] = {
 	{"GET", "/HEAD$", get_head},
 	{"GET", "/info/refs$", get_info_refs},
 	{"GET", "/objects/info/alternates$", get_text_file},

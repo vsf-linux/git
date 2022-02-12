@@ -128,7 +128,7 @@ struct credential {
 	char *path;
 };
 
-#define CREDENTIAL_INIT { \
+#define CREDENTIAL_INIT (struct credential){ \
 	.helpers = STRING_LIST_INIT_DUP, \
 }
 
