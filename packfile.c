@@ -18,6 +18,58 @@
 #include "commit-graph.h"
 #include "promisor-remote.h"
 
+#ifdef __VSF__
+define_vsf_git_mod(git_packfile_public,
+	sizeof(struct __git_packfile_public_ctx_t),
+	GIT_MOD_PACKFILE_PUBLIC,
+	NULL
+)
+
+struct __git_packfile_ctx_t {
+	unsigned int __pack_used_ctr;
+	unsigned int __pack_mmap_calls;
+	unsigned int __peak_pack_open_windows;
+	unsigned int __pack_open_windows;
+	unsigned int __pack_open_fds;
+	unsigned int __pack_max_fds;
+	size_t __peak_pack_mapped;
+	size_t __pack_mapped;
+	struct hashmap __delta_base_cache;
+	size_t __delta_base_cached;
+	struct list_head __delta_base_cache_lru;    // = { &(delta_base_cache_lru), &(delta_base_cache_lru) };
+	struct {
+		struct strbuf __buf;			// = STRBUF_INIT;
+	} sha1_pack_name;
+	struct {
+		struct strbuf  __buf;			// = STRBUF_INIT;
+	} sha1_pack_index_name;
+	struct {
+		struct trace_key __pack_access;	// = TRACE_KEY_INIT(PACK_ACCESS);
+	} write_pack_access_log;
+	struct {
+		struct oidset __promisor_objects;
+		int __promisor_objects_prepared;
+	} is_promisor_object;
+};
+static void __git_packfile_mod_init(void *ctx)
+{
+	struct __git_packfile_ctx_t *__git_packfile_ctx = ctx;
+	__git_packfile_ctx->sha1_pack_name.__buf = STRBUF_INIT;
+	__git_packfile_ctx->sha1_pack_index_name.__buf = STRBUF_INIT;
+	__git_packfile_ctx->__delta_base_cache_lru = (struct list_head) {
+		&__git_packfile_ctx->__delta_base_cache_lru,
+		&__git_packfile_ctx->__delta_base_cache_lru,
+	};
+	__git_packfile_ctx->write_pack_access_log.__pack_access = TRACE_KEY_INIT(PACK_ACCESS);
+}
+define_vsf_git_mod(git_packfile,
+	sizeof(struct __git_packfile_ctx_t),
+	GIT_MOD_PACKFILE,
+	__git_packfile_mod_init
+)
+#	define git_packfile_ctx				((struct __git_packfile_ctx_t *)vsf_git_ctx(git_packfile))
+#endif
+
 char *odb_pack_name(struct strbuf *buf,
 		    const unsigned char *hash,
 		    const char *ext)
@@ -30,16 +82,40 @@ char *odb_pack_name(struct strbuf *buf,
 
 char *sha1_pack_name(const unsigned char *sha1)
 {
+#ifdef __VSF__
+#	define buf							(git_packfile_ctx->sha1_pack_name.__buf)
+#else
 	static struct strbuf buf = STRBUF_INIT;
+#endif
 	return odb_pack_name(&buf, sha1, "pack");
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
 char *sha1_pack_index_name(const unsigned char *sha1)
 {
+#ifdef __VSF__
+#	define buf							(git_packfile_ctx->sha1_pack_index_name.__buf)
+#else
 	static struct strbuf buf = STRBUF_INIT;
+#endif
 	return odb_pack_name(&buf, sha1, "idx");
+#ifdef __VSF__
+#	undef buf
+#endif
 }
 
+#ifdef __VSF__
+#	define pack_used_ctr				(git_packfile_ctx->__pack_used_ctr)
+#	define pack_mmap_calls				(git_packfile_ctx->__pack_mmap_calls)
+#	define peak_pack_open_windows		(git_packfile_ctx->__peak_pack_open_windows)
+#	define pack_open_windows			(git_packfile_ctx->__pack_open_windows)
+#	define pack_open_fds				(git_packfile_ctx->__pack_open_fds)
+#	define pack_max_fds					(git_packfile_ctx->__pack_max_fds)
+#	define peak_pack_mapped				(git_packfile_ctx->__peak_pack_mapped)
+#	define pack_mapped					(git_packfile_ctx->__pack_mapped)
+#else
 static unsigned int pack_used_ctr;
 static unsigned int pack_mmap_calls;
 static unsigned int peak_pack_open_windows;
@@ -48,6 +124,7 @@ static unsigned int pack_open_fds;
 static unsigned int pack_max_fds;
 static size_t peak_pack_mapped;
 static size_t pack_mapped;
+#endif
 
 #define SZ_FMT PRIuMAX
 static inline uintmax_t sz_fmt(size_t s) { return s; }
@@ -1339,10 +1416,16 @@ unwind:
 	goto out;
 }
 
+#ifdef __VSF__
+#	define delta_base_cache				(git_packfile_ctx->__delta_base_cache)
+#	define delta_base_cached			(git_packfile_ctx->__delta_base_cached)
+#	define delta_base_cache_lru			(git_packfile_ctx->__delta_base_cache_lru)
+#else
 static struct hashmap delta_base_cache;
 static size_t delta_base_cached;
 
 static LIST_HEAD(delta_base_cache_lru);
+#endif
 
 struct delta_base_cache_key {
 	struct packed_git *p;
@@ -1633,12 +1716,21 @@ static void *unpack_compressed_entry(struct packed_git *p,
 
 static void write_pack_access_log(struct packed_git *p, off_t obj_offset)
 {
+#ifdef __VSF__
+#	define pack_access					(git_packfile_ctx->write_pack_access_log.__pack_access)
+#else
 	static struct trace_key pack_access = TRACE_KEY_INIT(PACK_ACCESS);
+#endif
 	trace_printf_key(&pack_access, "%s %"PRIuMAX"\n",
 			 p->pack_name, (uintmax_t)obj_offset);
+#ifdef __VSF__
+#	undef pack_access
+#endif
 }
 
+#ifndef __VSF__
 int do_check_packed_object_crc;
+#endif
 
 #define UNPACK_ENTRY_STACK_PREALLOC 64
 struct unpack_entry_stack_ent {
@@ -2253,8 +2345,13 @@ static int add_promisor_object(const struct object_id *oid,
 
 int is_promisor_object(const struct object_id *oid)
 {
+#ifdef __VSF__
+#	define promisor_objects				(git_packfile_ctx->is_promisor_object.__promisor_objects)
+#	define promisor_objects_prepared	(git_packfile_ctx->is_promisor_object.__promisor_objects_prepared)
+#else
 	static struct oidset promisor_objects;
 	static int promisor_objects_prepared;
+#endif
 
 	if (!promisor_objects_prepared) {
 		if (has_promisor_remote()) {
@@ -2265,4 +2362,8 @@ int is_promisor_object(const struct object_id *oid)
 		promisor_objects_prepared = 1;
 	}
 	return oidset_contains(&promisor_objects, oid);
+#ifdef __VSF__
+#	undef promisor_objects
+#	undef promisor_objects_prepared
+#endif
 }

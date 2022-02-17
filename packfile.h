@@ -152,7 +152,16 @@ off_t get_delta_base(struct packed_git *p, struct pack_window **w_curs,
 void release_pack_memory(size_t);
 
 /* global flag to enable extra checks when accessing packed objects */
+#ifdef __VSF__
+struct __git_packfile_public_ctx_t {
+	int __do_check_packed_object_crc;
+};
+declare_vsf_git_mod(git_packfile_public)
+#	define git_packfile_public_ctx		((struct __git_packfile_public_ctx_t *)vsf_git_ctx(git_packfile_public))
+#	define do_check_packed_object_crc	(git_packfile_public_ctx->__do_check_packed_object_crc)
+#else
 extern int do_check_packed_object_crc;
+#endif
 
 int packed_object_info(struct repository *r,
 		       struct packed_git *pack,
