@@ -8,11 +8,31 @@
 #define DEFAULT_PAGER "less"
 #endif
 
-static struct child_process pager_process;
+#ifdef __VSF__
+struct __git_pager_ctx_t {
+	struct child_process ____pager_process;
+	const char *__pager_program;
+	int __term_columns_guessed;
+	struct {
+		int __term_columns_at_startup;
+	} term_columns;
+};
+define_vsf_git_mod(git_pager,
+	sizeof(struct __git_pager_ctx_t),
+	GIT_MOD_PAGER,
+	NULL
+)
+#	define git_pager_ctx				((struct __git_pager_ctx_t *)vsf_git_ctx(git_pager))
+#	define __pager_process				(git_pager_ctx->____pager_process)
+#	define pager_program				(git_pager_ctx->__pager_program)
+#	define term_columns_guessed			(git_pager_ctx->__term_columns_guessed)
+#else
+static struct child_process __pager_process;
 static const char *pager_program;
 
 /* Is the value coming back from term_columns() just a guess? */
 static int term_columns_guessed;
+#endif
 
 
 static void close_pager_fds(void)
@@ -27,13 +47,13 @@ static void wait_for_pager_atexit(void)
 	fflush(stdout);
 	fflush(stderr);
 	close_pager_fds();
-	finish_command(&pager_process);
+	finish_command(&__pager_process);
 }
 
 static void wait_for_pager_signal(int signo)
 {
 	close_pager_fds();
-	finish_command_in_signal(&pager_process);
+	finish_command_in_signal(&__pager_process);
 	sigchain_pop(signo);
 	raise(signo);
 }
@@ -124,20 +144,20 @@ void setup_pager(void)
 
 	setenv("GIT_PAGER_IN_USE", "true", 1);
 
-	child_process_init(&pager_process);
+	child_process_init(&__pager_process);
 
 	/* spawn the pager */
-	prepare_pager_args(&pager_process, pager);
-	pager_process.in = -1;
-	strvec_push(&pager_process.env_array, "GIT_PAGER_IN_USE");
-	if (start_command(&pager_process))
+	prepare_pager_args(&__pager_process, pager);
+	__pager_process.in = -1;
+	strvec_push(&__pager_process.env_array, "GIT_PAGER_IN_USE");
+	if (start_command(&__pager_process))
 		return;
 
 	/* original process continues, but writes to the pipe */
-	dup2(pager_process.in, 1);
+	dup2(__pager_process.in, 1);
 	if (isatty(2))
-		dup2(pager_process.in, 2);
-	close(pager_process.in);
+		dup2(__pager_process.in, 2);
+	close(__pager_process.in);
 
 	/* this makes sure that the parent terminates after the pager */
 	sigchain_push_common(wait_for_pager_signal);
@@ -156,7 +176,11 @@ int pager_in_use(void)
  */
 int term_columns(void)
 {
+#ifdef __VSF__
+#	define term_columns_at_startup		(git_pager_ctx->term_columns.__term_columns_at_startup)
+#else
 	static int term_columns_at_startup;
+#endif
 
 	char *col_string;
 	int n_cols;
@@ -183,6 +207,9 @@ int term_columns(void)
 #endif
 
 	return term_columns_at_startup;
+#ifdef __VSF__
+#	undef term_columns_at_startup
+#endif
 }
 
 /*
