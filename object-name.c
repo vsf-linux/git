@@ -20,6 +20,22 @@ static int get_oid_oneline(struct repository *r, const char *, struct object_id 
 
 typedef int (*disambiguate_hint_fn)(struct repository *, const struct object_id *, void *);
 
+#ifdef __VSF__
+struct __git_object_name_ctx_t {
+	disambiguate_hint_fn __default_disambiguate_hint;
+	struct {
+		int __bufno;
+		char __hexbuffer[4][GIT_MAX_HEXSZ + 1];
+	} repo_find_unique_abbrev;
+};
+define_vsf_git_mod(git_object_name,
+	sizeof(struct __git_object_name_ctx_t),
+	GIT_MOD_OBJECT_NAME,
+	NULL
+)
+#	define git_object_name_ctx			((struct __git_object_name_ctx_t *)vsf_git_ctx(git_object_name))
+#endif
+
 struct disambiguate_state {
 	int len; /* length of prefix in hex chars */
 	char hex_pfx[GIT_MAX_HEXSZ + 1];
@@ -284,7 +300,11 @@ static int disambiguate_blob_only(struct repository *r,
 	return kind == OBJ_BLOB;
 }
 
+#ifdef __VSF__
+#	define default_disambiguate_hint	(git_object_name_ctx->__default_disambiguate_hint)
+#else
 static disambiguate_hint_fn default_disambiguate_hint;
+#endif
 
 int set_disambiguate_hint_config(const char *var, const char *value)
 {
@@ -720,12 +740,21 @@ const char *repo_find_unique_abbrev(struct repository *r,
 				    const struct object_id *oid,
 				    int len)
 {
+#ifdef __VSF__
+#	define bufno						(git_object_name_ctx->repo_find_unique_abbrev.__bufno)
+#	define hexbuffer					(git_object_name_ctx->repo_find_unique_abbrev.__hexbuffer)
+#else
 	static int bufno;
 	static char hexbuffer[4][GIT_MAX_HEXSZ + 1];
+#endif
 	char *hex = hexbuffer[bufno];
 	bufno = (bufno + 1) % ARRAY_SIZE(hexbuffer);
 	repo_find_unique_abbrev_r(r, hex, oid, len);
 	return hex;
+#ifdef __VSF__
+#	undef bufno
+#	undef hexbuffer
+#endif
 }
 
 static int ambiguous_path(const char *path, int len)

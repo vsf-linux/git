@@ -21,6 +21,32 @@ static const char * const builtin_rm_usage[] = {
 	NULL
 };
 
+#ifdef __VSF__
+struct __git_builtin_rm_ctx_t {
+	struct {
+		int nr, alloc;
+		struct {
+			const char *name;
+			char is_submodule;
+		} *entry;
+	} __list;
+
+	int __show_only, __force, __index_only, __recursive, __quiet;
+	int __ignore_unmatch, __pathspec_file_nul;
+	int __include_sparse;
+	char *__pathspec_from_file;
+
+	struct option __builtin_rm_options[10];
+};
+static void __git_builtin_rm_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_rm,
+	sizeof(struct __git_builtin_rm_ctx_t),
+	GIT_MOD_BUILTIN_RM,
+	__git_builtin_rm_mod_init
+)
+#	define git_builtin_rm_ctx			((struct __git_builtin_rm_ctx_t *)vsf_git_ctx(git_builtin_rm))
+#	define list							(git_builtin_rm_ctx->__list)
+#else
 static struct {
 	int nr, alloc;
 	struct {
@@ -28,6 +54,7 @@ static struct {
 		char is_submodule;
 	} *entry;
 } list;
+#endif
 
 static int get_ours_cache_pos(const char *path, int pos)
 {
@@ -235,12 +262,29 @@ static int check_local_mod(struct object_id *head, int index_only)
 	return errs;
 }
 
+#ifdef __VSF__
+#	define show_only					(git_builtin_rm_ctx->__show_only)
+#	define force						(git_builtin_rm_ctx->__force)
+#	define index_only					(git_builtin_rm_ctx->__index_only)
+#	define recursive					(git_builtin_rm_ctx->__recursive)
+#	define quiet						(git_builtin_rm_ctx->__quiet)
+#	define ignore_unmatch				(git_builtin_rm_ctx->__ignore_unmatch)
+#	define pathspec_file_nul			(git_builtin_rm_ctx->__pathspec_file_nul)
+#	define include_sparse				(git_builtin_rm_ctx->__include_sparse)
+#	define pathspec_from_file			(git_builtin_rm_ctx->__pathspec_from_file)
+#	define builtin_rm_options			(git_builtin_rm_ctx->__builtin_rm_options)
+static void __git_builtin_rm_mod_init(void *ctx)
+{
+	struct __git_builtin_rm_ctx_t *__git_builtin_rm_ctx = ctx;
+struct option __builtin_rm_options[] = {
+#else
 static int show_only = 0, force = 0, index_only = 0, recursive = 0, quiet = 0;
 static int ignore_unmatch = 0, pathspec_file_nul;
 static int include_sparse;
 static char *pathspec_from_file;
 
 static struct option builtin_rm_options[] = {
+#endif
 	OPT__DRY_RUN(&show_only, N_("dry run")),
 	OPT__QUIET(&quiet, N_("do not list removed files")),
 	OPT_BOOL( 0 , "cached",         &index_only, N_("only remove from the index")),
@@ -253,6 +297,14 @@ static struct option builtin_rm_options[] = {
 	OPT_PATHSPEC_FILE_NUL(&pathspec_file_nul),
 	OPT_END(),
 };
+#ifdef __VSF__
+	if (dimof(__builtin_rm_options) > dimof(__git_builtin_rm_ctx->__builtin_rm_options)) {
+		vsf_trace_error("__builtin_rm_options MUST be >= %d\n", dimof(__builtin_rm_options));
+		VSF_LINUX_ASSERT(false);
+	}
+	memcpy(__git_builtin_rm_ctx->__builtin_rm_options, __builtin_rm_options, sizeof(__builtin_rm_options));
+}
+#endif
 
 int cmd_rm(int argc, const char **argv, const char *prefix)
 {
