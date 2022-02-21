@@ -362,6 +362,12 @@ void invalidate_lstat_cache(void)
 }
 
 #undef rmdir
+#ifdef __VSF__
+#	include "shell/sys/linux/vsf_linux_cfg.h"
+#	if VSF_LINUX_CFG_WRAPPER == ENABLED && !__IS_COMPILER_IAR__
+#		define rmdir			VSF_LINUX_WRAPPER(rmdir)
+#	endif
+#endif
 int lstat_cache_aware_rmdir(const char *path)
 {
 	/* Any change in this function must be made also in `mingw_rmdir()` */

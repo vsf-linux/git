@@ -12,7 +12,78 @@ static const char *const builtin_config_usage[] = {
 	NULL
 };
 
-static char *key;
+#ifdef __VSF__
+struct __git_builtin_config_ctx_t {
+	char *____key;
+	regex_t *__key_regexp;
+	const char *__value_pattern;
+	regex_t *__regexp;
+	int __show_keys;
+	int __omit_values;
+	int __use_key_regexp;
+	int __do_all;
+	int __do_not_match;
+	char __delim;						// = '=';
+	char __key_delim;					// = ' ';
+	char ____term;						// = '\n';
+
+	int __use_global_config, __use_system_config, __use_local_config;
+	int __use_worktree_config;
+	struct git_config_source __given_config_source;
+	int __actions, __type;
+	char *__default_value;
+	int __end_nul;
+	int __respect_includes_opt;			// = -1;
+	struct config_options __config_options;
+	int __show_origin;
+	int __show_scope;
+	int __fixed_value;
+	struct option __builtin_config_options[39];
+
+	int __get_color_found;
+	const char *__get_color_slot;
+	const char *__get_colorbool_slot;
+	char __parsed_color[COLOR_MAXLEN];
+	int __get_colorbool_found;
+	int __get_diff_color_found;
+	int __get_color_ui_found;
+};
+static void __git_builtin_config_mod_init(void *ctx);
+define_vsf_git_mod(git_builtin_config,
+	sizeof(struct __git_builtin_config_ctx_t),
+	GIT_MOD_BUILTIN_CONFIG,
+	__git_builtin_config_mod_init
+)
+#	define git_builtin_config_ctx		((struct __git_builtin_config_ctx_t *)vsf_git_ctx(git_builtin_config))
+#	define __key						(git_builtin_config_ctx->____key)
+#	define key_regexp					(git_builtin_config_ctx->__key_regexp)
+#	define value_pattern				(git_builtin_config_ctx->__value_pattern)
+#	define regexp						(git_builtin_config_ctx->__regexp)
+#	define show_keys					(git_builtin_config_ctx->__show_keys)
+#	define omit_values					(git_builtin_config_ctx->__omit_values)
+#	define use_key_regexp				(git_builtin_config_ctx->__use_key_regexp)
+#	define do_all						(git_builtin_config_ctx->__do_all)
+#	define do_not_match					(git_builtin_config_ctx->__do_not_match)
+#	define delim						(git_builtin_config_ctx->__delim)
+#	define key_delim					(git_builtin_config_ctx->__key_delim)
+#	define __term						(git_builtin_config_ctx->____term)
+#	define use_global_config			(git_builtin_config_ctx->__use_global_config)
+#	define use_system_config			(git_builtin_config_ctx->__use_system_config)
+#	define use_local_config				(git_builtin_config_ctx->__use_local_config)
+#	define use_worktree_config			(git_builtin_config_ctx->__use_worktree_config)
+#	define git_config_source			(git_builtin_config_ctx->__git_config_source)
+#	define given_config_source			(git_builtin_config_ctx->__given_config_source)
+#	define actions						(git_builtin_config_ctx->__actions)
+#	define type							(git_builtin_config_ctx->__type)
+#	define default_value				(git_builtin_config_ctx->__default_value)
+#	define end_nul						(git_builtin_config_ctx->__end_nul)
+#	define respect_includes_opt			(git_builtin_config_ctx->__respect_includes_opt)
+#	define config_options				(git_builtin_config_ctx->__config_options)
+#	define show_origin					(git_builtin_config_ctx->__show_origin)
+#	define show_scope					(git_builtin_config_ctx->__show_scope)
+#	define fixed_value					(git_builtin_config_ctx->__fixed_value)
+#else
+static char *__key;
 static regex_t *key_regexp;
 static const char *value_pattern;
 static regex_t *regexp;
@@ -23,7 +94,7 @@ static int do_all;
 static int do_not_match;
 static char delim = '=';
 static char key_delim = ' ';
-static char term = '\n';
+static char __term = '\n';
 
 static int use_global_config, use_system_config, use_local_config;
 static int use_worktree_config;
@@ -36,6 +107,7 @@ static struct config_options config_options;
 static int show_origin;
 static int show_scope;
 static int fixed_value;
+#endif
 
 #define ACTION_GET (1<<0)
 #define ACTION_GET_ALL (1<<1)
@@ -126,7 +198,19 @@ static int option_parse_type(const struct option *opt, const char *arg,
 	return 0;
 }
 
+#ifdef __VSF__
+#	define builtin_config_options		(git_builtin_config_ctx->__builtin_config_options)
+static void __git_builtin_config_mod_init(void *ctx)
+{
+	struct __git_builtin_config_ctx_t *__git_builtin_config_ctx = ctx;
+	__git_builtin_config_ctx->__delim = '=';
+	__git_builtin_config_ctx->__key_delim = ' ';
+	__git_builtin_config_ctx->____term = '\n';
+	__git_builtin_config_ctx->__respect_includes_opt = -1;
+struct option __builtin_config_options[] = {
+#else
 static struct option builtin_config_options[] = {
+#endif
 	OPT_GROUP(N_("Config file location")),
 	OPT_BOOL(0, "global", &use_global_config, N_("use global config file")),
 	OPT_BOOL(0, "system", &use_system_config, N_("use system config file")),
@@ -167,6 +251,14 @@ static struct option builtin_config_options[] = {
 	OPT_STRING(0, "default", &default_value, N_("value"), N_("with --get, use default value when missing entry")),
 	OPT_END(),
 };
+#ifdef __VSF__
+	if (dimof(__builtin_config_options) > dimof(__git_builtin_config_ctx->__builtin_config_options)) {
+		vsf_trace_error("__builtin_config_options MUST be >= %d\n", dimof(__builtin_config_options));
+		VSF_LINUX_ASSERT(false);
+	}
+	memcpy(__git_builtin_config_ctx->__builtin_config_options, __builtin_config_options, sizeof(__builtin_config_options));
+}
+#endif
 
 static NORETURN void usage_builtin_config(void)
 {
@@ -220,9 +312,9 @@ static int show_all_config(const char *key_, const char *value_, void *cb)
 		strbuf_release(&buf);
 	}
 	if (!omit_values && value_)
-		printf("%s%c%s%c", key_, delim, value_, term);
+		printf("%s%c%s%c", key_, delim, value_, __term);
 	else
-		printf("%s%c", key_, term);
+		printf("%s%c", key_, __term);
 	return 0;
 }
 
@@ -287,7 +379,7 @@ static int format_config(struct strbuf *buf, const char *key_, const char *value
 				strbuf_setlen(buf, buf->len - 1);
 		}
 	}
-	strbuf_addch(buf, term);
+	strbuf_addch(buf, __term);
 	return 0;
 }
 
@@ -295,7 +387,7 @@ static int collect_config(const char *key_, const char *value_, void *cb)
 {
 	struct strbuf_list *values = cb;
 
-	if (!use_key_regexp && strcmp(key_, key))
+	if (!use_key_regexp && strcmp(key_, __key))
 		return 0;
 	if (use_key_regexp && regexec(key_regexp, key_, 0, NULL, 0))
 		return 0;
@@ -326,23 +418,23 @@ static int get_value(const char *key_, const char *regex_, unsigned flags)
 		 * Perhaps we should deprecate this altogether someday.
 		 */
 
-		key = xstrdup(key_);
-		for (tl = key + strlen(key) - 1;
-		     tl >= key && *tl != '.';
+		__key = xstrdup(key_);
+		for (tl = __key + strlen(__key) - 1;
+		     tl >= __key && *tl != '.';
 		     tl--)
 			*tl = tolower(*tl);
-		for (tl = key; *tl && *tl != '.'; tl++)
+		for (tl = __key; *tl && *tl != '.'; tl++)
 			*tl = tolower(*tl);
 
 		key_regexp = (regex_t*)xmalloc(sizeof(regex_t));
-		if (regcomp(key_regexp, key, REG_EXTENDED)) {
+		if (regcomp(key_regexp, __key, REG_EXTENDED)) {
 			error(_("invalid key pattern: %s"), key_);
 			FREE_AND_NULL(key_regexp);
 			ret = CONFIG_INVALID_PATTERN;
 			goto free_strings;
 		}
 	} else {
-		if (git_config_parse_key(key_, &key, NULL)) {
+		if (git_config_parse_key(key_, &__key, NULL)) {
 			ret = CONFIG_INVALID_KEY;
 			goto free_strings;
 		}
@@ -389,7 +481,7 @@ static int get_value(const char *key_, const char *regex_, unsigned flags)
 	free(values.items);
 
 free_strings:
-	free(key);
+	free(__key);
 	if (key_regexp) {
 		regfree(key_regexp);
 		free(key_regexp);
@@ -453,10 +545,17 @@ static char *normalize_value(const char *key, const char *value)
 	BUG("cannot normalize type %d", type);
 }
 
+#ifdef __VSF__
+#	define get_color_found				(git_builtin_config_ctx->__get_color_found)
+#	define get_color_slot				(git_builtin_config_ctx->__get_color_slot)
+#	define get_colorbool_slot			(git_builtin_config_ctx->__get_colorbool_slot)
+#	define parsed_color					(git_builtin_config_ctx->__parsed_color)
+#else
 static int get_color_found;
 static const char *get_color_slot;
 static const char *get_colorbool_slot;
 static char parsed_color[COLOR_MAXLEN];
+#endif
 
 static int git_get_color_config(const char *var, const char *value, void *cb)
 {
@@ -486,9 +585,15 @@ static void get_color(const char *var, const char *def_color)
 	fputs(parsed_color, stdout);
 }
 
+#ifdef __VSF__
+#	define get_colorbool_found			(git_builtin_config_ctx->__get_colorbool_found)
+#	define get_diff_color_found			(git_builtin_config_ctx->__get_diff_color_found)
+#	define get_color_ui_found			(git_builtin_config_ctx->__get_color_ui_found)
+#else
 static int get_colorbool_found;
 static int get_diff_color_found;
 static int get_color_ui_found;
+#endif
 static int git_get_colorbool_config(const char *var, const char *value,
 		void *cb)
 {
@@ -734,7 +839,7 @@ int cmd_config(int argc, const char **argv, const char *prefix)
 	}
 
 	if (end_nul) {
-		term = '\0';
+		__term = '\0';
 		delim = '\n';
 		key_delim = '\n';
 	}
