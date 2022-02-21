@@ -20,6 +20,45 @@
 #include "repository.h"
 #include "sigchain.h"
 
+#ifdef __VSF__
+struct __git_refs_ctx_t {
+	struct string_list *__hide_refs;
+	struct hashmap __submodule_ref_stores;
+	struct hashmap __worktree_ref_stores;
+
+	struct {
+		char *__ret;
+	} git_default_branch_name;
+	struct {
+		int __configured;
+		int __timeout_ms;				// = 100;
+	} get_files_ref_lock_timeout_ms;
+	struct {
+		char **__scanf_fmts;
+		int __nr_rules;
+	} refs_shorten_unambiguous_ref;
+	struct {
+		int __ref_paranoia;				// = -1;
+	} refs_ref_iterator_begin;
+	struct {
+		struct strbuf __sb_refname;		// = STRBUF_INIT;
+	} refs_resolve_ref_unsafe;
+};
+static void __git_refs_mod_init(void *ctx)
+{
+	struct __git_refs_ctx_t *__git_refs_ctx = ctx;
+	__git_refs_ctx->get_files_ref_lock_timeout_ms.__timeout_ms = 100;
+	__git_refs_ctx->refs_ref_iterator_begin.__ref_paranoia = -1;
+	__git_refs_ctx->refs_resolve_ref_unsafe.__sb_refname = STRBUF_INIT;
+}
+define_vsf_git_mod(git_refs,
+	sizeof(struct __git_refs_ctx_t),
+	GIT_MOD_REFS,
+	__git_refs_mod_init
+)
+#	define git_refs_ctx					((struct __git_refs_ctx_t *)vsf_git_ctx(git_refs))
+#endif
+
 /*
  * List of all available backends
  */
@@ -44,7 +83,7 @@ static struct ref_storage_be *find_ref_storage_backend(const char *name)
  *    ":", "?", "[", "\", "^", "~", SP, or TAB
  * 5: *, reject unless REFNAME_REFSPEC_PATTERN is set
  */
-static unsigned char refname_disposition[256] = {
+static const unsigned char refname_disposition[256] = {
 	1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 	4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 	4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 1,
@@ -600,12 +639,19 @@ char *repo_default_branch_name(struct repository *r, int quiet)
 
 const char *git_default_branch_name(int quiet)
 {
+#ifdef __VSF__
+#	define ret							(git_refs_ctx->git_default_branch_name.__ret)
+#else
 	static char *ret;
+#endif
 
 	if (!ret)
 		ret = repo_default_branch_name(the_repository, quiet);
 
 	return ret;
+#ifdef __VSF__
+#	undef ret
+#endif
 }
 
 /*
@@ -779,10 +825,15 @@ enum ref_type ref_type(const char *refname)
 
 long get_files_ref_lock_timeout_ms(void)
 {
+#ifdef __VSF__
+#	define configured					(git_refs_ctx->get_files_ref_lock_timeout_ms.__configured)
+#	define timeout_ms					(git_refs_ctx->get_files_ref_lock_timeout_ms.__timeout_ms)
+#else
 	static int configured = 0;
 
 	/* The default timeout is 100 ms: */
 	static int timeout_ms = 100;
+#endif
 
 	if (!configured) {
 		git_config_get_int("core.filesreflocktimeout", &timeout_ms);
@@ -790,6 +841,10 @@ long get_files_ref_lock_timeout_ms(void)
 	}
 
 	return timeout_ms;
+#ifdef __VSF__
+#	undef configured
+#	undef timeout_ms
+#endif
 }
 
 int refs_delete_ref(struct ref_store *refs, const char *msg,
@@ -1199,8 +1254,13 @@ char *refs_shorten_unambiguous_ref(struct ref_store *refs,
 				   const char *refname, int strict)
 {
 	int i;
+#ifdef __VSF__
+#	define scanf_fmts					(git_refs_ctx->refs_shorten_unambiguous_ref.__scanf_fmts)
+#	define nr_rules						(git_refs_ctx->refs_shorten_unambiguous_ref.__nr_rules)
+#else
 	static char **scanf_fmts;
 	static int nr_rules;
+#endif
 	char *short_name;
 	struct strbuf resolved_buf = STRBUF_INIT;
 
@@ -1291,6 +1351,10 @@ char *refs_shorten_unambiguous_ref(struct ref_store *refs,
 	strbuf_release(&resolved_buf);
 	free(short_name);
 	return xstrdup(refname);
+#ifdef __VSF__
+#	undef scanf_fmts
+#	undef nr_rules
+#endif
 }
 
 char *shorten_unambiguous_ref(const char *refname, int strict)
@@ -1299,7 +1363,11 @@ char *shorten_unambiguous_ref(const char *refname, int strict)
 					    refname, strict);
 }
 
+#ifdef __VSF__
+#	define hide_refs					(git_refs_ctx->__hide_refs)
+#else
 static struct string_list *hide_refs;
+#endif
 
 int parse_hide_refs_config(const char *var, const char *value, const char *section)
 {
@@ -1412,7 +1480,11 @@ struct ref_iterator *refs_ref_iterator_begin(
 	struct ref_iterator *iter;
 
 	if (!(flags & DO_FOR_EACH_INCLUDE_BROKEN)) {
+#ifdef __VSF__
+#	define ref_paranoia					(git_refs_ctx->refs_ref_iterator_begin.__ref_paranoia)
+#else
 		static int ref_paranoia = -1;
+#endif
 
 		if (ref_paranoia < 0)
 			ref_paranoia = git_env_bool("GIT_REF_PARANOIA", 1);
@@ -1420,6 +1492,9 @@ struct ref_iterator *refs_ref_iterator_begin(
 			flags |= DO_FOR_EACH_INCLUDE_BROKEN;
 			flags |= DO_FOR_EACH_OMIT_DANGLING_SYMREFS;
 		}
+#ifdef __VSF__
+#	undef ref_paranoia
+#endif
 	}
 
 	iter = refs->be->iterator_begin(refs, prefix, flags);
@@ -1684,7 +1759,11 @@ const char *refs_resolve_ref_unsafe(struct ref_store *refs,
 				    struct object_id *oid,
 				    int *flags, int *failure_errno)
 {
+#ifdef __VSF__
+#	define sb_refname					(git_refs_ctx->refs_resolve_ref_unsafe.__sb_refname)
+#else
 	static struct strbuf sb_refname = STRBUF_INIT;
+#endif
 	struct object_id unused_oid;
 	int unused_flags;
 	int symref_count;
@@ -1771,6 +1850,9 @@ const char *refs_resolve_ref_unsafe(struct ref_store *refs,
 
 	*failure_errno = ELOOP;
 	return NULL;
+#ifdef __VSF__
+#	undef sb_refname
+#endif
 }
 
 /* backend functions */
@@ -1844,11 +1926,16 @@ static struct ref_store_hash_entry *alloc_ref_store_hash_entry(
 	return entry;
 }
 
+#ifdef __VSF__
+#	define submodule_ref_stores			(git_refs_ctx->__submodule_ref_stores)
+#	define worktree_ref_stores			(git_refs_ctx->__worktree_ref_stores)
+#else
 /* A hashmap of ref_stores, stored by submodule name: */
 static struct hashmap submodule_ref_stores;
 
 /* A hashmap of ref_stores, stored by worktree id: */
 static struct hashmap worktree_ref_stores;
+#endif
 
 /*
  * Look up a ref store by name. If that ref_store hasn't been
